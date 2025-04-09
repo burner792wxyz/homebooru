@@ -1,0 +1,33 @@
+<head>
+    <title>Settings & Stats</title>
+    <link rel="stylesheet" href="/static/basic.css">
+</head>
+<body>
+    <header>  
+        <h1 class="title">HomeBooru</h1>
+    
+        <nav>
+            <menu>
+                <a href="/" class="nav-link">Home</a>
+                <a href="/wiki" class="nav-link">Wiki</a>
+                <a href="/import" class="nav-link">Import</a>
+                <a href="/settings" class="nav-link">Settings</a>
+            </menu>
+        </nav>
+
+        <section class="settings">
+            <h1>Settings</h1>
+        </section>
+
+        <section class="stats">
+            <h1>Stats</h1>
+            <ul>
+                <li>Pages: {{stats['pages']}}</li>
+                <li>Total Posts: {{stats['total_posts']}}</li>
+                <li>Deleted Posts: {{stats['deleted_posts']}}</li><br>
+                <li>Total Tags: {{stats['total_tags']}}</li>
+                <li>Active Tags: {{stats['active_tags']}}</li>
+                <li>Inactive Tags: {{stats['inactive_tags']}}</li>
+            </ul>
+        </section>
+    </header>   

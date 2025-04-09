@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<head>
+    <title>{{title}}</title>
+
+    <link rel="stylesheet" href="/static/basic.css">
+    <link rel="script" href="/static/basic-scripts.js">
+</head>
+<body>
+    <header>  
+        <h1 class="title">HomeBooru</h1>
+    
+        <nav>
+            <menu class="nav">
+                <li class="nav-item"> <a href="/" class="nav-link">Home</a> </li>
+                <li class="nav-item"> <a href="/wiki" class="nav-link">Wiki</a> </li>
+                <li class="nav-item"> <a href="/import" class="nav-link">Import</a> </li>
+                <li class="nav-item"> |  </li>
+                <li class="nav-item"> <a name="link-to-self" href="?edit=1" class="nav-link">Edit</a> </li>
+                <li class="nav-item"> <a name="link-to-self" href="?delete=1" class="nav-link">delete</a> </li>
+            </menu>
+        </nav>
+    </header>
+    <div class="flex">
+        <aside class="sidebar">
+            <h3> Tags </h3>
+            <ul class="tags">
+                {% for tag in tag_list %}
+                    <li>{{ tag | safe}}</li>
+                {% endfor %}
+            </ul>
+            <h3> Info </h3>
+            <ul class="post-info">
+               <li> ID: {{ info["ID"] }} </li>
+               <li> Uploader: {{ info["Uploader"] }} </li>
+               <li> Date: {{ info["Date"] }} </li>
+               <li> Size: {{ info["Size"] }}</li>
+               <li> Source:  None & <a href="https://realbooru.com/images/4b/6b/4b6bd31a477caa9fcfef3d316c98b4e0.webm">realbooru</a> </li>
+               <li> Rating: {{ info["Rating"] }} </li>
+               <li> Original Score: {{ info["Score"] }} </li>
+               <li id="info-rank"> Homebooru Rank: {{ info["Homebooru_Rank"] }} </li>
+               <li> Filepath: {{ info["Filepath"] }} </li>  
+            </ul>
+            <h3> Options </h3>
+            <ul class="post-options"> 
+                <li> <a href=""> resize to window </a> </li>
+                <li> <a id="download_link" href="/#" download> download </a> </li>
+            </ul>
+        </aside>
+        <div style="height: fit-content; width: max-content;">
+            <div class="notice notice-resized imported-content" id="image-resize-notice" hidden="True">a<a name="link-to-self" href="?resize=true">view original</a></div>
+                {{ media | safe }}
+                <div class="from-search">
+                    <span>search: <a id="search-link"> </a></span>
+                </div>
+                <form id="rank-bar-form" action='' method="post" style="display: flex; justify-content: space-between;" >
+                    <div class="rank-bar">
+                        <button id="rank-box 0" type="button" class="rank-box" onclick="rank_box_click(event)" title="★"></button>
+                        <button id="rank-box 1" type="button" class="rank-box" onclick="rank_box_click(event)" title="★★"></button>
+                        <button id="rank-box 2" type="button" class="rank-box" onclick="rank_box_click(event)" title="★★★"></button>
+                        <button id="rank-box 3" type="button" class="rank-box" onclick="rank_box_click(event)" title="★★★★"></button>
+                        <button id="rank-box 4" type="button" class="rank-box" onclick="rank_box_click(event)" title="★★★★★"></button>
+                    </div>
+                    <input type="submit" value="submit">
+                </form>
+            </div>
+            <section class="imported-content" id="edit-section">
+                {{ edit | safe }}
+            </section>
+        </div>
+    </div>
+</body>
+<script src="/static/basic-scripts.js"></script>
+
+<script>
+    function rank_box_click(ev) {
+        const button_id = ev.target.id
+        var selected_button = -Infinity
+        if (document.getElementById(button_id).style.backgroundColor != "var(--rank-box-background-active)"){
+            selected_button = Number(button_id.split(" ")[1]);
+        }
+        const all_buttons = document.getElementsByClassName("rank-box");
+        for (let i = 0; i < all_buttons.length; i++) {
+            if (i <= selected_button){
+                all_buttons[i].style.backgroundColor = "var(--rank-box-background-active)";
+            }
+            else {
+                all_buttons[i].style.backgroundColor = "var(--rank-box-background)";
+            }
+        }
+
+        document.getElementById("rank-bar-form").action = post_link+"&rank="+(button_id.split(" ")[1])
+    }
+    
+    link_element_array = document.getElementsByName('link-to-self');
+    const parent_href = add_parentlink(link_element_array);
+    //add search if posibble
+    const search_link = document.getElementById("search-link");
+    search_link.href = parent_href;
+    var search_text = parent_href.split('tags=').at(-1).split('+').join(' ');
+    search_link.innerText = search_text.replace('%3A', ':')
+
+    const post_link = window.location.href + "?"
+    const download_link = document.getElementById("post-media").src;
+    document.getElementById("download_link").href = download_link;
+
+    resize_check()
+    const edit = Boolean(new URLSearchParams(window.location.search).get("edit"));
+    const del = Boolean(new URLSearchParams(window.location.search).get("delete"));
+    if (edit || new URLSearchParams(window.location.search).get("delete") === "1") {
+        window.onload = function() {
+            const element = document.getElementById("edit-section");
+            if (element) {
+               element.scrollIntoView({ behavior: "instant", block: "start" });
+            }
+        };
+    }
+
+    //click existing rank
+    const rank = 'rank-box ' + document.getElementById('info-rank').innerText.split(': ')[1]
+    document.getElementById(rank).click();
+</script>
+
+

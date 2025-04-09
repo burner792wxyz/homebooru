@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<head>
+    <title>HomeBooru client</title>
+
+    <link rel="stylesheet" href="/static/basic.css">
+</head>
+<body>
+    <header>  
+        <h1 class="title">HomeBooru</h1>
+    
+        <nav>
+            <menu>
+                <a href="/" class="nav-link">Home</a>
+                <a href="/wiki" class="nav-link">Wiki</a>
+                <a href="/import" class="nav-link">Import</a>
+                
+            </menu>
+        </nav>
+    </header>
+    <div class="flex-col">
+        <div class="notice notice-resized" id="image-resize-notice" hidden="True">a<a href="?resize=true">view original</a></div>
+        <section class="imported-content flex centered">
+            {{ media | safe }}
+        </section>
+            <form class="centered" action="\import" method="get">
+                <div class="selector large-selector">
+                    <label for="tags">tags</label>
+                    <textarea name="tags" id="tags"></textarea>
+                </div>
+
+                <div class="selector large-selector">
+                    <label for="source">source</label>
+                    <input name="source" id="source" type="text">
+                </div>
+
+                <div class="selector large-selector">
+                    <label for="Title">Title</label>
+                    <input name="Title" id="Title" type="text" value="None">
+                </div>
+
+                <div class="selector large-selector">
+                    <label for="rating">rating</label>
+                    <select name="rating" id="rating" value="Explicit">
+                        <option value="Explicit">Explicit</option>
+                        <option value="Questinable">Questinable</option>  
+                        <option value="Sensitive">Sensitive</option>
+                        <option value="General">General</option>
+                    </select>
+                </div>
+                <div class="hidden">
+                    <label for="filepath" id="given_filepath">{{filepath}}</label>
+                    <input name="filepath" id="filepath">
+                </div>
+                <br>
+                <input type="submit" name="stage" value="submit">
+            </form>
+    </div>
+</body>
+<script>
+    var filepath = document.getElementById("given_filepath").textContent;
+    document.getElementById("filepath").value = filepath;
+</script>

@@ -1,0 +1,59 @@
+<head>
+    <title>HomeBooru tags</title>
+    <link rel="stylesheet" href="/static/basic.css">
+</head>
+<body>
+    <header>  
+        <h1 class="title">HomeBooru</h1>
+    
+        <nav>
+            <menu>
+                <a href="/" class="nav-link">Home</a>
+                <a href="/wiki" class="nav-link">Wiki</a>
+                <a href="/import" class="nav-link">Import</a>
+                <li class="nav-item"> | </li>
+                <li class="nav-item"> <a class="nav-link" href="?update=1">Update</a></li>
+                
+            </menu>
+        </nav>
+    </header>
+    <div class="content">
+        <form class="simple_form search-form inline-form" action="/wiki" method="get">
+            <div class="selector">
+                <label class="string optional">Name</label>
+                <input  type="text" name="name" id="search-box" class="text" value=""></div>
+            <div class="selector">
+                <label class="" for="category">Category</label>
+                <select class="" name="category" id="category">
+                    <option value="" label=" "></option>
+                    <option value="1">Artist</option>
+                    <option value="3">Copyright</option>
+                    <option value="4">Character</option>
+                    <option value="0">General</option>
+                    <option value="5">Meta</option></select></div>
+            <div class="selector">
+                <label class="" for="order">Order</label>
+                <select class="" name="order" id="order" value="count">
+                    <option value="date">Newest</option>
+                    <option value="count">Count</option>
+                    <option value="name">Name</option></select></div>
+            <input type="submit" name="commit" value="Search" data-disable-with="Search">
+          </form>
+        <section class="post_grid">
+            <ul class="tags">
+                {% for tag in tags %}
+                    {{ tag | safe }}
+                {% endfor %}
+            </ul>
+        </section>
+    </div>
+</body>
+<script>
+    var search = new URLSearchParams(window.location.search).get("name");
+    document.getElementById("search-box").value = search;
+    var category = new URLSearchParams(window.location.search).get("category");
+    document.getElementById("category").value = category;
+    var order = new URLSearchParams(window.location.search).get("order");
+    document.getElementById("order").value = order;
+
+</script>

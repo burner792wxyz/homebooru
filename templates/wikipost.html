@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<head>
+    <title>{{title}}</title>
+    <link rel="stylesheet" href="/static/basic.css">
+</head>
+<body>
+    <header>  
+        <h1 class="title">HomeBooru</h1>
+    
+        <nav>
+            <menu class="nav">
+                <li class="nav-item"> <a href="/" class="nav-link">Home</a> </li>
+                <li class="nav-item"> <a href="/wiki" class="nav-link">Wiki</a> </li>
+                <li class="nav-item"> <a href="/import" class="nav-link">Import</a> </li>
+                <li class="nav-item"> |  </li>
+                <li class="nav-item"> <a href="?edit=1" class="nav-link">Edit</a> </li>
+                <li class="nav-item"> <a href="?delete=1" class="nav-link">delete</a> </li>
+            </menu>
+        </nav>
+    </header>
+
+    <div class="flex">
+        <aside>
+            <ul style="list-style: none;">
+                <li>post count: {{data['count']}}</li>
+                <li>last updated : {{data['last_updated']}}</li>
+            </ul>
+        </aside>
+        <div>
+            <a href="/posts?tags={{data['tag']}}"><h1>{{data['tag']}}</h1></a>
+            <h2>Description</h3>
+            <p>{{data['desc']}}</p><hr>
+
+            <h2>Robots</h3>
+            <h3 class="no-bottom-margin">Aliases</h3> 
+            <small>renames all aliases to tag "{{data['tag']}}"</small>
+            <p class="bulk-listing"> 
+                {% for x in data['robots']['aliases'] %}
+                    {{x}}
+                {% endfor %}
+            </p>
+
+            <h3 class="no-bottom-margin">Implications</h3>
+            <small>add tag "{{data['tag']}}" to all tags in implications</small>
+            <p class="bulk-listing">
+                {% for x in data['robots']['implications'] %}
+                    {{x}}
+                {% endfor %}
+            </p>
+
+            <h3 class="no-bottom-margin">Replacements</h3>
+            <small>inverse of Aliases, replaces tag "{{data['tag']}}" with all replacements</small>
+            <p class="bulk-listing">
+                {% for x in data['robots']['replacements'] %}
+                    {{x}}
+                {% endfor %}
+            </p>          
+        </div>
+        <section class="imported-content" id="edit-section">
+            {{ ending | safe }}
+        </section>
+    </div>
+</body>
+

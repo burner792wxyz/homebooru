@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<head>
+    <title>HomeBooru client</title>
+
+    <link rel="stylesheet" href="/static/basic.css">
+</head>
+<body>
+    <header>  
+        <h1 class="title">HomeBooru</h1>
+    
+        <nav>
+            <menu>
+                <a href="/" class="nav-link">Home</a>
+                <a href="/wiki" class="nav-link">Wiki</a>
+                <a href="/import" class="nav-link">Import</a>
+                <a href="/settings" class="nav-link">Settings</a>
+                <li class="nav-item"> |  </li>
+                <li class="nav-item"> <a href="?edit=True" class="nav-link">Edit</a> </li>
+                
+            </menu>
+        </nav>
+    </header>
+    <div class="flex">
+        <aside class="sidebar">
+            <section id="search-box">
+                <h2 style="margin: 0%;">Search</h2>
+
+                <form id="search-box-form" action="/posts" accept-charset="UTF-8" method="get">
+                  <input type="text" name="tags" data-shortcut="q" data-autocomplete="tag-query" value="{{search}}" >
+                  <button id="search-box-submit" type="submit"><svg viewBox="0 0 512 512"><use fill="currentColor" href="static/icons-c18cad4efd0bb958da81.svg#magnifying-glass"></use></svg></button>
+                </form>
+            </section>
+            <section id="tag-list">
+                <h2>Tags</h2>
+                <ul class="tags">
+                    {% for tag in tags %}
+                        {{ tag | safe }}
+                    {% endfor %}
+                </ul>
+            </section>
+
+        </aside>
+        <section class="post_grid">
+            {% for post in posts %}
+                <article id="{{ post['id'] }}" class="post flex" tags="{{ post['tags'] }}">
+                    <a name="post-link" class="post-preview" href="/posts/{{ post['site'] }}_{{ post['id'] }}">
+                        <picture>
+                            <source srcset="{{ post['img_src'] }}">
+                            <img class="resized-media {{ post['media_class'] }} preview" src="{{ post['img_src'] }}">
+                        </picture>
+                    </a>
+                </article>
+            {% endfor %}
+        </section>
+    </div>
+    <div class="pageinator">
+        {% for page in pageinator %}
+            {{ page | safe }}
+        {% endfor %}
+    </div>
+</body>
+
+<script src="/static/basic-scripts.js"></script>
+<script>
+    const post_array = document.getElementsByName("post-link")
+    console.log(post_array)
+    add_parentlink(post_array)
+</script>
