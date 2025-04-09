@@ -3,21 +3,20 @@ create folders and shii
 '''
 import os, orjson, time, tqdm # type: ignore
 from PIL import Image
-import classes
-
-global prefix
-cwd = os.path.abspath(os.getcwd())
-prefix = f'{cwd}/source'
-#prefix = 'C:/TrimKey/scripts/HomeBooru/source'
 
 #json handling
-def read_json(filepath: str) -> dict:
+def read_json(filepath: str, no_error = False) -> dict:
     try:
         with open(filepath, 'r') as file_obj:
             file_text = file_obj.read()
             result = dict(orjson.loads(file_text))
     except orjson.JSONDecodeError:
         return None
+    except Exception as Ex:
+        if no_error:
+            return None
+        else: 
+            raise Ex
     return(result)
 
 def write_json(filepath: str, obj: dict) -> None:
@@ -53,37 +52,36 @@ def create_folder(filepath: str) -> bool:
         return False
 
 def create_site(site: str):
-    global prefix
-    if os.path.isdir(f'{prefix}/static/dataset/{site}/media'):
+    global dataset_path
+    site_path = f'{dataset_path}/{site}'
+    if os.path.isdir(f'{site_path}/media'):
         return False
     stats_changed()
-    #print(f'{prefix}/static/dataset/{site}/media')
-    create_folder(f'{prefix}/static/dataset/{site}/media')
+    create_folder(f'{site_path}/media')
     
     tag_data = {'description': 'dictionary of posts'}
-    create_file(f'{prefix}/static/dataset/{site}/post_data.json', tag_data, mode='j')
-    master_list = read_json(f'{prefix}/static/dataset/master_list.json')
+    create_file(f'{site_path}/post_data.json', tag_data, mode='j')
+    master_list = read_json(f'{dataset_path}/master_list.json')
     master_list.update({site : [0]})
 
-    write_json(f'{prefix}/static/dataset/master_list.json', master_list)
+    write_json(f'{dataset_path}/master_list.json', master_list)
 
 def create_post(post):
     '''adds post to: 
     site/post_data.json, master_list.json, tag_dict.json'''
 
     stats_changed()
-    dataset_dir = f'{prefix}/static/dataset'
     #add to post data
-    sites = [x for x in os.listdir(dataset_dir) if os.path.isdir(f'{dataset_dir}/{x}')]
+    sites = [x for x in os.listdir(dataset_path) if os.path.isdir(f'{dataset_path}/{x}')]
     if not post.site in sites:
         create_site(post.site)
     if post.data_path == None:
-        post.data_path == f'{dataset_dir}/{post.site}/post_data.json'
+        post.data_path == f'{dataset_path}/{post.site}/post_data.json'
     post_data_file = read_json(post.data_path)
     post_data_file.update({post.num_id : post.data_dictionary})
     write_json(post.data_path, post_data_file)
     #add to master list
-    master_list_path = f'{prefix}/static/dataset/master_list.json'
+    master_list_path = f'{dataset_path}/master_list.json'
     full_list = read_json(master_list_path)
     if post.site in full_list.keys(): 
         full_list[post.site].append(post.num_id)
@@ -98,14 +96,14 @@ def create_post(post):
 
 
 def create_all():
-    global prefix
+    global prefix, dataset_path
     create_folder(f'{prefix}/static/temp/media')
-    create_folder(f'{prefix}/static/dataset')
+    create_folder(f'{dataset_path}')
 
-    create_file(f'{prefix}/static/dataset/master_list.json', {"description":"list of posts", "master":[]}, mode='ja')
-    create_file(f'{prefix}/static/dataset/tag_dict.json', {"description":"dictionary of tags"}, mode='ja')
+    create_file(f'{dataset_path}/master_list.json', {"description":"list of posts", "master":[]}, mode='ja')
+    create_file(f'{dataset_path}/tag_dict.json', {"description":"dictionary of tags"}, mode='ja')
     create_file(f'{prefix}/static/temp/cache.json', {"stored_search" : {"search" : "", "ids" : [], 'start_page' : 0}}, mode='jw')
-    create_file(f'{prefix}/static/dataset/stats.json', classes.stats.start_dict, mode='j')
+    create_file(f'{dataset_path}/stats.json', classes.stats.start_dict, mode='j')
 
     create_site('homebooru')
 
@@ -114,11 +112,11 @@ def create_all():
 
 #delete things
 def delete_post(post_name: str) -> bool:
-    global prefix
+    global prefix, dataset_path
     stats_changed()
     post_site, post_id = post_name.split('_')
 
-    data_path = f'{prefix}/static/dataset/{post_site}/post_data.json'
+    data_path = f'{dataset_path}/{post_site}/post_data.json'
     all_post_data = read_json(data_path)
     #backup = all_post_data.copy
     #error = False
@@ -132,7 +130,7 @@ def delete_post(post_name: str) -> bool:
         print(f'{post_id} is not present in {data_path} ; could not delete')
 
 
-    master_list_path = f'{prefix}/static/dataset/master_list.json'
+    master_list_path = f'{dataset_path}/master_list.json'
     master_list = read_json(master_list_path)
     if str(post_name) in master_list["master"]:
         master_index = master_list["master"].index(str(post_name))
@@ -152,14 +150,14 @@ def delete_post(post_name: str) -> bool:
     
     write_json(master_list_path, master_list)
 
-    stats = read_json(f'{prefix}/static/dataset/stats.json')
+    stats = read_json(f'{dataset_path}/stats.json')
     stats["deleted_posts"] += 1
-    write_json(f'{prefix}/static/dataset/stats.json', stats)
+    write_json(f'{dataset_path}/stats.json', stats)
     return True
 
 #other things
 def recount_tagdict(tag_dict) -> dict:
-    dataset_dir = f'{prefix}/static/dataset'
+    dataset_dir = f'{dataset_path}'
     tag_dict_path = f'{dataset_dir}/tag_dict.json'
 
     updated_tags = []
@@ -194,7 +192,7 @@ def recount_tagdict(tag_dict) -> dict:
     return tag_dict
 
 def update_post_tags(modifier_tag, update_details: dict):#add automatic replacmet/alias & recount
-    dataset_dir = f'{prefix}/static/dataset'
+    dataset_dir = f'{dataset_path}'
     tag_dict_path = f'{dataset_dir}/tag_dict.json'
 
     modified_tags = [modifier_tag]
@@ -263,17 +261,17 @@ def update_post_tags(modifier_tag, update_details: dict):#add automatic replacme
 
 
 def update_stats():
-    stat_path = f'{prefix}/static/dataset/stats.json'
+    stat_path = f'{dataset_path}/stats.json'
     stats = read_json(stat_path)
 
-    master_list = read_json(f'{prefix}/static/dataset/master_list.json')['master']
+    master_list = read_json(f'{dataset_path}/master_list.json')['master']
     total_posts = 0
     for post_id in tqdm.tqdm(master_list):
         if check_post(post_id) : total_posts += 1
     stats['total_posts'] = total_posts
     stats['pages'] = total_posts//20
     
-    tag_dict = read_json(f'{prefix}/static/dataset/tag_dict.json')
+    tag_dict = read_json(f'{dataset_path}/tag_dict.json')
     tag_dict = recount_tagdict(tag_dict)['all']
     assert type(tag_dict) == dict
     total_tags = 0
@@ -313,7 +311,7 @@ def check_post(post_id) -> bool:
 
 def stats_invalid() -> bool:
     'checks if stored stats may be innacurate'
-    stat_path = f'{prefix}/static/dataset/stats.json'
+    stat_path = f'{dataset_path}/stats.json'
     stats = read_json(stat_path)
     valid = not bool(stats.get('valid', False))
     ignore = stats.get('ignore', False)
@@ -323,8 +321,14 @@ def stats_invalid() -> bool:
 
 def stats_changed() -> None:
     'changes stats to invalid'
-    stat_path = f'{prefix}/static/dataset/stats.json'
+    stat_path = f'{dataset_path}/stats.json'
     stats = read_json(stat_path)
     stats['valid'] = False
     write_json(stat_path, stats)
     #print('stats are now invalid')
+
+import classes
+global prefix, dataset_path
+cwd = os.path.abspath(os.getcwd())
+prefix = f'{cwd}/source'
+dataset_path = read_json(f'{prefix}/config.json')["dataset_path"]

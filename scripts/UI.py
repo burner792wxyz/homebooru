@@ -19,8 +19,10 @@ import flask, os, re, math, shutil, socket, time, tqdm, random
 
 posts_per_page = 20
 
-prefix = f'{os.path.abspath(os.getcwd())}/source'
-dataset_dir = f'{prefix}/static/dataset'
+global prefix, dataset_path
+cwd = os.path.abspath(os.getcwd())
+prefix = f'{cwd}/source'
+dataset_path = data_manager.read_json(f'{prefix}/config.json')["dataset_path"]
 
 media_keys = ['media_link', 'media_width', 'media_height', 'frame_rate', 'length', 'original_source']
 immutables = ["storage_path", "score", "id", "mediadata", "uploader_id"]
@@ -180,7 +182,7 @@ def get_id_list(all_post_data: dict, sort_value = "time_catalouged_asc", safe=Tr
                 num = all_post_data[post_site][post_id][sort_value]
                 if (num == None) or (num == "None"):
                     raise KeyError
-            except KeyError:
+            except:
                 broken_ids.append(post_name)
                 return 0
 
@@ -198,7 +200,7 @@ def get_id_list(all_post_data: dict, sort_value = "time_catalouged_asc", safe=Tr
 
     print(f'borken ids {broken_ids}')
 
-    id_list = data_manager.read_json(f'{dataset_dir}\master_list.json')
+    id_list = data_manager.read_json(f'{dataset_path}\master_list.json')
     id_list = sorted(set(id_list["master"]), key=sorting_function, reverse=reverse)
     id_list = [x for x in id_list if x not in broken_ids]
     return(id_list)  
@@ -286,7 +288,7 @@ def preview(filename):
 def home():
     timing = {}
     timing.update({'func start *start*' : time.time()})
-    global posts_per_page, dataset_dir
+    global posts_per_page, dataset_path
     pagechange()
     all_args = flask.request.args.to_dict()
     page = int(all_args.get('page', 0))
@@ -308,7 +310,7 @@ def home():
     print(f'tags: {tags}')
 
     timing.update({'func start *end* / get all_post_data *start*' : time.time()})
-    all_sites = [f'{path}/post_data.json' for path in [f'{dataset_dir}/{x}' for x in os.listdir(dataset_dir)] if os.path.isdir(path)]
+    all_sites = [f'{path}/post_data.json' for path in [f'{dataset_path}/{x}' for x in os.listdir(dataset_path)] if os.path.isdir(path)]
     all_post_data = {site.split('/')[-2] : data_manager.read_json(site) for site in all_sites}
     timing.update({'get all_post_data *end* / build id list *start*' : time.time()})
 
@@ -373,7 +375,7 @@ def wiki():
     if order not in ['count', 'name', 'date']:
         order = 'count'
     update = int(all_args.get('update', 0))
-    tag_dict_path = f'{prefix}/static/dataset/tag_dict.json'
+    tag_dict_path = f'{dataset_path}/tag_dict.json'
     tag_dict = data_manager.read_json(tag_dict_path)
     if 'all' not in tag_dict.keys() or (update == 1):
         print('tag_dict not found, generating')
@@ -455,7 +457,7 @@ def import_post():
         title = all_args.get('title', "")
         filepath = all_args.get('filepath', "")
 
-        full_list = data_manager.read_json(f'{dataset_dir}\master_list.json')
+        full_list = data_manager.read_json(f'{dataset_path}\master_list.json')
         id_list = [int(x) for x in full_list["homebooru"]]
 
         cleaned_tags = importer.tag_cleaner(tags)
@@ -463,7 +465,7 @@ def import_post():
         print(id_list)
         mediadata_info = importer.get_mediadata_info(filepath)
         print(mediadata_info)
-        new_filepath = f'{app.static_folder}/dataset/homebooru/media/{post_id}.{mediadata_info["file_extenstion"]}'
+        new_filepath = f'{dataset_path}/homebooru/media/{post_id}.{mediadata_info["file_extenstion"]}'
         post_data = {#mutables first
             'id': post_id,
             'tags': cleaned_tags,
@@ -477,7 +479,7 @@ def import_post():
             'storage_path': new_filepath
         }
         #add post info
-        tag_path = f'{app.static_folder}/dataset/homebooru/tag_data.json'
+        tag_path = f'{dataset_path}/homebooru/tag_data.json'
         all_post_data = data_manager.read_json(tag_path)
         all_post_data.update({str(post_id):post_data})
         data_manager.write_json(tag_path, all_post_data)
@@ -485,7 +487,7 @@ def import_post():
         #update master list
         full_list["master"].append(f"homebooru_{post_id}")
         full_list["homebooru"].append(post_id)
-        data_manager.write_json(f'{dataset_dir}\master_list.json', full_list)
+        data_manager.write_json(f'{dataset_path}\master_list.json', full_list)
         
         #move post
         shutil.move(filepath, new_filepath)
@@ -498,7 +500,7 @@ def post_page(post_name):
     if '_' not in post_name:
         return flask.abort(404)
     post_site, post_id = post_name.split('_')
-    log_location = f'{dataset_dir}/{post_site}/post_data.json'
+    log_location = f'{dataset_path}/{post_site}/post_data.json'
     full_data = data_manager.read_json(log_location)
     post_data = dict(full_data[post_id])
     post_data['id'] = post_name
@@ -602,7 +604,7 @@ def wiki_page(tag):
 
     all_args = flask.request.args.to_dict()
     create = bool(all_args.get('create', False))
-    tag_dict = data_manager.read_json(f'{prefix}/static/dataset/tag_dict.json')
+    tag_dict = data_manager.read_json(f'{dataset_path}/tag_dict.json')
     edit = int(all_args.get('edit', 0)) #0=nothing, 1=enter details, 2=process edit 
 
     tag_data = tag_dict["all"].get(tag, None)
@@ -661,7 +663,7 @@ def wiki_page(tag):
                 else:
                     tag_data[key] = data[key]
         tag_dict["all"][tag] = tag_data
-        data_manager.write_json(f'{prefix}/static/dataset/tag_dict.json', tag_dict)
+        data_manager.write_json(f'{dataset_path}/tag_dict.json', tag_dict)
         #update posts
         robots = tag_data['robots']
         data_manager.update_post_tags(tag, robots)
@@ -674,7 +676,7 @@ def wiki_page(tag):
 @app.route('/settings')
 @app.route('/settings/')
 def settings():
-    stats = data_manager.read_json(f'{prefix}/static/dataset/stats.json')
+    stats = data_manager.read_json(f'{dataset_path}/stats.json')
     return flask.render_template('settings.html', stats = stats)
 
 if __name__ == '__main__':

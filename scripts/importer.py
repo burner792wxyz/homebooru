@@ -3,9 +3,10 @@ import subprocess, re, requests, PIL.Image, tqdm, time, os
 import ffmpeg
 import data_manager, classes
 
-global prefix
+global prefix, dataset_path
 cwd = os.path.abspath(os.getcwd())
 prefix = f'{cwd}/source'
+dataset_path = data_manager.read_json(f'{prefix}/config.json')["dataset_path"]
 
 image_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'svg', 'gif']
 video_extensions = ['mp4', 'webm', 'avi', 'flv', 'mov', 'wmv', 'mkv', 'm4v']
@@ -149,7 +150,7 @@ def download_post(post_id, website_class, site) -> str:
         #print(media_link)
         media_data = requests.get(media_link).content
         file_extension = media_link.split('.')[-1]
-        filepath = f'{prefix}/static/dataset/{site}/media/{post_id}.{file_extension}'
+        filepath = f'{dataset_path}/{site}/media/{post_id}.{file_extension}'
         with open(filepath, 'wb') as handler:
             files_downloaded.append(post_id)
             handler.write(media_data)
@@ -207,7 +208,6 @@ def download_page(url, website_class, site): #website_class contains a dict of r
     global all_downloaded_ids, files_downloaded
     html = call_api(url)
     try:
-        data_manager.create_file(f'{prefix}/a.html', html)
         ids_on_page = [int(x) for x in re.findall(website_class['id class'], html)]#returns a list of all ids on page
         page_name = f'{re.findall(r"[.](.*?)[.]", url)[0]}id{ids_on_page[0]}to{ids_on_page[-1]}'
     except IndexError:
@@ -229,7 +229,7 @@ def tag_cleaner(tag_list):
     for tag in tag_list:
         tag = tag.split(':')[-1]
         correction_found = False
-        data_manager.read_json(f'{prefix}/static/dataset/tag_dict.json')
+        data_manager.read_json(f'{dataset_path}/tag_dict.json')
         '''
         for mapping in tag_dict:
             if re.fullmatch(mapping[1], tag) != None:
@@ -272,7 +272,7 @@ def iterate():
         page_index += site_patterns['posts per page']
         ids_to_download -= site_patterns['posts per page']
 
-    master_list_path = f'{prefix}/static/dataset/master_list.json'
+    master_list_path = f'{dataset_path}/master_list.json'
     master_list = data_manager.read_json(master_list_path)
     all_downloaded_ids = master_list[site]
     for i in tqdm.tqdm(pids, position=1):

@@ -4,6 +4,11 @@ module that defines all data classes used in homebooru
 import random, os, json
 import data_manager
 
+global prefix, dataset_path
+cwd = os.path.abspath(os.getcwd())
+prefix = f'{cwd}/source'
+dataset_path = data_manager.read_json(f'{prefix}/config.json')["dataset_path"]
+
 class errors:
     class PostNotFound(Exception):
         pass  
@@ -146,8 +151,8 @@ class post:
         self.site, self.num_id = self.id.split('_')
         prefix = f'{os.path.abspath(os.getcwd())}/source'
         #prefix = 'C:/TrimKey/scripts/HomeBooru/source'
-        post_path = f'{prefix}/static/dataset/{self.site}/post_data.json'
-        post_json = data_manager.read_json(post_path)
+        post_path = f'{dataset_path}/{self.site}/post_data.json'
+        post_json = data_manager.read_json(post_path, True)
         if post_json == None:
             raise Exception(f'{self.site} has empty post data')
         if not str(self.num_id) in post_json.keys():
@@ -161,7 +166,7 @@ class post:
 class tag:
     class_type = "tag class"
     cwd = os.path.abspath(os.getcwd())
-    data_path = f'{cwd}/source/static/dataset/tag_dict.json'
+    data_path = f'{dataset_path}/tag_dict.json'
     def __init__(self):        
         self.invalid = str(''.join([chr(random.randint(33, 125)) for x in range(0, 100)]))
 

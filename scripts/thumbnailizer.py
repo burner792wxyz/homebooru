@@ -51,11 +51,11 @@ def convert(input_file, frame_number=0):
 
     # Save as uncompressed BMP
     try:
-        img.save(output_file, "BMP")
+        img.save(output_file, "JPEG")
         #print(f"Frame {frame_number} saved as {output_file}")
         return output_file
     except Exception as e:
-        print(f"Error saving BMP: {e}")
+        print(f"Error saving JPEG: {e}")
         return False
     
 ''' 
