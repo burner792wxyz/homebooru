@@ -5,21 +5,23 @@ import os, orjson, time, tqdm # type: ignore
 from PIL import Image
 
 #json handling
-def read_json(filepath: str, no_error = False) -> dict:
+def read_json(filepath: str, no_error = False):
     try:
-        with open(filepath, 'r') as file_obj:
+        with open(filepath, 'r', encoding='UTF-8') as file_obj:
             file_text = file_obj.read()
+            if len(file_text) == 0: return None
             result = dict(orjson.loads(file_text))
-    except orjson.JSONDecodeError:
-        return None
     except Exception as Ex:
         if no_error:
+            print(Ex)
             return None
         else: 
             raise Ex
     return(result)
 
 def write_json(filepath: str, obj: dict) -> None:
+    if obj in [None, '']:
+        print(f'failed to write to {filepath} while creating post because invalid object was given \n {__name__} \n')
     with open(filepath, 'wb') as file_obj:
         json_bytes = orjson.dumps(obj)
         file_obj.write(json_bytes)
@@ -266,8 +268,14 @@ def update_stats():
 
     master_list = read_json(f'{dataset_path}/master_list.json')['master']
     total_posts = 0
+    cached_post_dict = None
+    post_data_dict = None
     for post_id in tqdm.tqdm(master_list):
-        if check_post(post_id) : total_posts += 1
+        site = post_id.split('_')[0]
+        if site != cached_post_dict:
+            post_data_dict = read_json(f'{dataset_path}/{site}/post_data.json', False)
+            cached_post_dict = site
+        if check_post(post_id, post_data_dict) : total_posts += 1
     stats['total_posts'] = total_posts
     stats['pages'] = total_posts//20
     
@@ -289,11 +297,12 @@ def update_stats():
 
     write_json(stat_path, stats)
 
-def check_post(post_id) -> bool:
+def check_post(post_id, post_data_dict) -> bool:
+    
     post = classes.post()
     valid = True
     try:
-        post.from_id(post_id)
+        post.from_id(post_id, post_data_dict)
     except classes.errors.PostNotFound:
         print(f'post not found at {post_id}')
         delete_post(post_id)

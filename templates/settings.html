@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <head>
     <title>Settings & Stats</title>
     <link rel="stylesheet" href="/static/basic.css">
@@ -29,5 +30,6 @@
                 <li>Active Tags: {{stats['active_tags']}}</li>
                 <li>Inactive Tags: {{stats['inactive_tags']}}</li>
             </ul>
+            <button class="med-margin standard_input" type="button" onclick="window.location.href='/update_stats';"> Update Stats </button>
         </section>
     </header>   

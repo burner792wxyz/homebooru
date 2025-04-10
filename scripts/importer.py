@@ -55,11 +55,11 @@ realbooru_patterns = {
     'page url end' : '&pid=',
     'total posts' : r'Serving (.*?) posts',  
     'id class' : r'<div class="col thumb" id=".(\d+)">', 
-    'post url' : 'www.realbooru.com/index.php?page=post&s=view&id=', 
+    'post url' : 'https://www.realbooru.com/index.php?page=post&s=view&id=', 
     'post url suffix' : '',
     'post data' : r'<div class="col-md-7 col-lg-7 col-xl-8">([\S\s]*?)<div class="col-md-5 col-lg-5 col-xl-4">',
-    'url' : "http://www.realbooru.com/",
-    'media link' : r'href="http://realbooru\.com//(images.*?)">Original</a>',
+    'url' : "https://www.realbooru.com/",
+    'media link' : r'href="https://realbooru\.com//(images.*?)">Original</a>',
     'original source' : None,
     'uploader id' : r'<a href="index\.php\?page=account&s=profile&id=(.*?)"',
     'uploader name' : r'<a href="index\.php\?page=account&s=profile.*?>(.*?)<',
@@ -279,7 +279,8 @@ def iterate():
 
         url = f'{site_patterns["page url start"]}{tags}{site_patterns["page url end"]}{i}'
         #print(url)
-        download_page(url, site_patterns, site)
+        if download_page(url, site_patterns, site) == None:
+            break
 
     
     print(f'done in {round(time.time()-start, 2)} seconds')

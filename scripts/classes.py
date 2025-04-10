@@ -143,20 +143,19 @@ class post:
             data_manager.create_post(self)
         return self.data_dictionary
 
-    def from_id(self, pid="self.id"):
+    def from_id(self, pid="self.id", post_json=None):
         if pid != "self.id":
             self.id = pid
         assert type(self.id) == str
         
         self.site, self.num_id = self.id.split('_')
-        prefix = f'{os.path.abspath(os.getcwd())}/source'
-        #prefix = 'C:/TrimKey/scripts/HomeBooru/source'
         post_path = f'{dataset_path}/{self.site}/post_data.json'
-        post_json = data_manager.read_json(post_path, True)
         if post_json == None:
-            raise Exception(f'{self.site} has empty post data')
-        if not str(self.num_id) in post_json.keys():
-            raise errors.PostNotFound()
+            post_json = data_manager.read_json(post_path, False)
+            if post_json == None:
+                raise Exception(f'{post_path} has empty post data')
+            if not str(self.num_id) in post_json.keys():
+                raise errors.PostNotFound()
         post_json = post_json[str(self.num_id)]
 
         self.from_json(post_json)

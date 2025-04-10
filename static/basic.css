@@ -51,7 +51,7 @@ svg{
     height: 1em;
 }
 
-input{
+input, .standard_input{
     border: white;
     border-style: solid;
     background: var(--form-input-background);
@@ -231,6 +231,10 @@ menu{
 
 .med-padding {
     padding: 1em;
+}
+
+.med-margin {
+    margin: 0.5em;
 }
 
 .no-lower-space {

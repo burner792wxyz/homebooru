@@ -11,7 +11,7 @@ prefix = f'{cwd}/source'
 def convert(input_file, frame_number=0):
     global prefix
 
-    output_file = f"{prefix}/static/temp/media/{input_file.split('.')[0].split('/')[-1]}.bmp"
+    output_file = f"{prefix}/static/temp/media/{input_file.split('.')[0].split('/')[-1]}.jpeg"
     if input_file.lower().split('.')[-1] in image_extenstions:
         return input_file
     if not os.path.exists(input_file):
@@ -51,6 +51,8 @@ def convert(input_file, frame_number=0):
 
     # Save as uncompressed BMP
     try:
+        if ((img.width>400)and(img.height>400)):
+            img.resize((400,400))
         img.save(output_file, "JPEG")
         #print(f"Frame {frame_number} saved as {output_file}")
         return output_file

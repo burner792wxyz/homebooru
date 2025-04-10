@@ -14,7 +14,7 @@ to run client:
     python source/scripts/UI.py
 '''
 import thumbnailizer, post_checker, importer, data_manager, classes #own scripts
-import flask, os, re, math, shutil, socket, time, tqdm, random
+import flask, os, re, math, shutil, socket, time, tqdm, random, asyncio
 
 
 posts_per_page = 20
@@ -269,19 +269,23 @@ app = flask.Flask(__name__, static_folder = f'{prefix}/static', template_folder 
 @app.route('/preview/<path:filename>')
 def preview(filename):
     mode = flask.request.args.get('mode', 'original')
-    #print(f'start : {filename}')
-    filename = re.sub(r'.*?static/', '', filename)
-    filename = f'{prefix}/static/{filename}'
-    #print(f'final : {filename}')
     if mode == 'preview':
         filename = str(thumbnailizer.convert(filename))
 
     if not os.path.exists(filename):
         print(f'while previewing media, {filename} : does not exist')
         flask.abort(404)
-    filename = re.sub(r'.*?static/', '', filename)
-    return flask.send_from_directory(app.static_folder, filename)
+    return flask.send_file(filename)
 
+@app.route('/update_stats')
+def update_stats():
+    data_manager.update_stats()
+    return flask.redirect('/settings', 307)
+    
+@app.route('/favicon.ico')
+def favicon():
+    print('sending favicon')
+    return flask.send_file(f'{prefix}/static/favicon.ico')
 #viewable views
 @app.route('/')
 @app.route('/posts')
@@ -687,14 +691,5 @@ if __name__ == '__main__':
     print(f"Server started on {hostname} at {ip_address}:{port}")
 
     data_manager.create_all()
-
+    print(app.root_path)
     app.run(debug=True, host='0.0.0.0', port=port)
-
-
-
-
-
-
-    
-    
-
