@@ -65,8 +65,8 @@ realbooru_patterns = {
     'uploader name' : r'<a href="index\.php\?page=account&s=profile.*?>(.*?)<',
     'score' : r'<span id="psc(.*?)">(.*?)</span>',
     'post title' : r'<h6(.*?)</h6>',
-    'given tags' : r'<a class="tag-type-(.*?)"(.*?)>(.*?)</a>'
-                      }
+    'given tags' : r'<a class="tag-type-.*?>(.*?)>?</a>'
+}
 
 
 def get_mediadata_info(filepath: str) -> dict | None:
@@ -146,7 +146,11 @@ def download_post(post_id, website_class, site) -> str:
             raise KeyError
 
         #parse id_html
-        media_link = website_class['url'] + str(re.findall(website_class['media link'], id_html)[-1])
+        rel_link = re.search(website_class['media link'], id_html)
+        if rel_link == None:
+            return
+        rel_link = rel_link.group(1)
+        media_link = website_class['url'] + rel_link
         #print(media_link)
         media_data = requests.get(media_link).content
         file_extension = media_link.split('.')[-1]
@@ -164,21 +168,21 @@ def download_post(post_id, website_class, site) -> str:
         original_source = website_class['original source']
         uploader_id = re.search(website_class['uploader id'], id_html)
         if uploader_id != None:
-            uploader_id = uploader_id.group()
+            uploader_id = uploader_id.group(1)
 
         uploader_name = re.search(website_class['uploader name'], id_html)
         if uploader_name != None:
-            uploader_name = uploader_name.group()
+            uploader_name = uploader_name.group(1)
 
         score = re.search(website_class['score'], id_html)
         if score != None:
-            score = score.group()
+            score = score.group(1)
 
         title = re.search(website_class['post title'], id_html)
         if title != None:
-            title = title.group()
+            title = title.group(1)
 
-        given_tags = [f'general:{x}' for x in re.findall(website_class['given tags'], id_html)]
+        given_tags = [f'general:{x.group(1)}' for x in re.finditer(website_class['given tags'], id_html)]
         rating = 'None'
 
         mediadata_info.update({'original_source' : original_source, "media_link" : media_link})

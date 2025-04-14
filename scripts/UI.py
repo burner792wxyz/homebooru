@@ -58,11 +58,12 @@ def build_post_html(passed_ids, all_post_data) -> tuple[list[str], list[str]]:
     tag_list = sorted(tag_dict, key= lambda i: tag_dict[i], reverse=True)[0:20]
     return(tag_list, post_html_list)
 
-def paginator(search, id_list) -> list:
+def paginator(search, id_list, page = None) -> list:
     global posts_per_page
     id_list = set(id_list)
-    page = int(search.get('page', 0))
-    extra_args = '&'+'&'.join([f'{key}={value}' for key, value in search.items() if key != 'page'])
+    if page == None:
+        page = int(search.get('page', 0))
+    extra_args = '&'+'&'.join([f'{key}={"+".join(value)}' for key, value in search.items()])
     pageinator = []
 
     total_posts = len(id_list)
@@ -169,9 +170,8 @@ def format_post_data(post_data):
     
     return(tag_htmls, other_postdata)
 
-def get_id_list(all_post_data: dict, sort_value = "time_catalouged_asc", safe=True):
+def get_id_list(all_post_data: dict, sort_value = "time_catalouged", safe=True):
     broken_ids = []
-    print(f'*{sort_value}*')
     #sorting function takes a tag
     if safe:
         def sorting_function(post_name):
@@ -182,11 +182,12 @@ def get_id_list(all_post_data: dict, sort_value = "time_catalouged_asc", safe=Tr
                 num = all_post_data[post_site][post_id][sort_value]
                 if (num == None) or (num == "None"):
                     raise KeyError
+                num = float(num)
             except:
                 broken_ids.append(post_name)
                 return 0
 
-            return float(num)
+            return num
     elif sort_value == "random":
         sorting_function = lambda i: random.random()
     else:
@@ -197,6 +198,7 @@ def get_id_list(all_post_data: dict, sort_value = "time_catalouged_asc", safe=Tr
         reverse = False
     else:
         reverse = True
+    print(reverse)
 
     print(f'borken ids {broken_ids}')
 
@@ -258,6 +260,7 @@ def parse_args(url = None) -> dict:
     other_args = end_arg_str.split('&')
     for arg in other_args:
         if '=' in arg:
+            print(arg)
             key, value = arg.split('=') 
             args.update({str(key) : value})
     return(args)
@@ -296,14 +299,14 @@ def home():
     pagechange()
     all_args = flask.request.args.to_dict()
     page = int(all_args.get('page', 0))
-    tags = all_args.get('tags', None)
-    search = all_args.copy()
+    search = {key : value.split(' ') for key, value in all_args.items()}
+    tags = search.get('tags', None)
     if 'page' in search.keys():
         del search['page']
 
-    sort = "time_catalouged_asc"
+    sort = "time_catalouged"
     if tags != None:
-        tags = tags.split()    
+        tags = tags.copy()    
         for i, tag in enumerate(tags):
             if "sort" in tag.lower() or "order" in tag.lower():
                 sort = tag.split(':')[-1]
@@ -311,7 +314,6 @@ def home():
         tags = {'tags' : tags}
     else:
         tags = {}
-    print(f'tags: {tags}')
 
     timing.update({'func start *end* / get all_post_data *start*' : time.time()})
     all_sites = [f'{path}/post_data.json' for path in [f'{dataset_path}/{x}' for x in os.listdir(dataset_path)] if os.path.isdir(path)]
@@ -338,7 +340,7 @@ def home():
                 #print(f'\n {post}')
                 passed_ids.append(post)
 
-    pageinator_obj = paginator(all_args, passed_ids)
+    pageinator_obj = paginator(search, passed_ids, page)
 
     passed_ids = passed_ids[page*posts_per_page :]
     timing.update({'build id list *end* / build post html *start*' : time.time()})
@@ -360,7 +362,8 @@ def home():
 '''
         tag_htmls.append(tag_html)
     timing.update({'make tag html *end* / finish *start*' : time.time()})
-    search = ' '.join([f'{key}={value}' if key != 'tags' else f'{value}' for key, value in search.items()])
+    print(search)
+    search = ' '.join([f'{" ".join(value)}' if key == "tags" else f'{key}:{" ".join(value)}' for key, value in search.items()])
     timing.update({'finish *end*' : time.time()})
 
     print_times(timing, True)

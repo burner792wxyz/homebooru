@@ -154,8 +154,8 @@ class post:
             post_json = data_manager.read_json(post_path, False)
             if post_json == None:
                 raise Exception(f'{post_path} has empty post data')
-            if not str(self.num_id) in post_json.keys():
-                raise errors.PostNotFound()
+        if not str(self.num_id) in post_json.keys():
+            raise errors.PostNotFound()
         post_json = post_json[str(self.num_id)]
 
         self.from_json(post_json)
