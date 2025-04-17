@@ -138,7 +138,6 @@ def format_link(link: str) -> str:
         return link
     return ' None '
 
-
 def format_post_data(post_data):
     post = classes.post()
     post_data = post.from_json(post_data)
@@ -152,12 +151,12 @@ def format_post_data(post_data):
 '''
         tag_htmls.append(tag_html)
 
-
+    true_size = classes.format_size(int(post_data["mediadata"]["file_size"]))
     other_postdata = {
     "ID" : str(post_data["id"]),
     "Uploader" : str(post_data["uploader_name"]),
     "Date" : str(time.strftime('%Y-%m-%d %H:%M', time.gmtime(post_data["time_catalouged"]))),
-    "Size" : f'{post_data["mediadata"]["file_size"]} {post_data["mediadata"]["media_width"]}x{post_data["mediadata"]["media_height"]}x{post_data["mediadata"]["length"]}',
+    "Size" : f'{true_size} {post_data["mediadata"]["media_width"]}x{post_data["mediadata"]["media_height"]}x{post_data["mediadata"]["length"]}',
     "Source" : f'{format_link(post_data["mediadata"]["original_source"])} & {format_link(post_data["mediadata"]["media_link"])}',
     "Rating" : str(post_data["rating"] ),
     "Score" : str(post_data["score"] ),
@@ -514,7 +513,6 @@ def post_page(post_name):
     post_data['id'] = post_name
  
     all_args = parse_args()
-    print(f'all args: {all_args}')
     edit = int(all_args.get('edit', 0)) #0=nothing, 1=enter details, 2=process edit 
     delete = int(all_args.get('delete', 0)) #0=nothing, 1=confirm, 2=process delete 
     rank = all_args.get('rank', None)

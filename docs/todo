@@ -1,6 +1,6 @@
 Major
-- fix robots on wiki (add regex)
+- add regex
 - complete import patterns
 - update tags on post import
 Minor
-- make filesize display with prefix not raw bytes
+- 

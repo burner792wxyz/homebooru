@@ -230,3 +230,12 @@ class tag:
             full_dictionary[str(self.name)] = self.data_dictionary
             data_manager.write_json(self.data_path, full_dictionary)
         return self.data_dictionary
+    
+def format_size(size: int) -> str:
+    units = ['B', 'kB', 'MB', 'GB']
+    i = 0
+    while size >= 1000:
+        size = size/1000
+        i += 1
+    unit = units[i]
+    return(f'{round(size,2)}{unit}')
