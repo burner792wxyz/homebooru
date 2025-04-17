@@ -27,34 +27,45 @@
             </ul>
         </aside>
         <div>
-            <a href="/posts?tags={{data['tag']}}"><h1>{{data['tag']}}</h1></a>
-            <h2>Description</h3>
-            <p>{{data['desc']}}</p><hr>
+            <div>
+                <a href="/posts?tags={{data['tag']}}"><h1>{{data['tag']}}</h1></a>
+                <h2>Description</h2>
+                <p>{{data['desc']}}</p><hr>
+            </div>
+            <div name="Robots">
+                <h2>Robots</h2>
+                <h3 class="no-bottom-margin">Aliases</h3> 
+                <small>renames all aliases to tag "{{data['tag']}}"</small>
+                <p class="bulk-listing"> 
+                    {% for x in data['robots']['aliases'] %}
+                        {{x}}
+                    {% endfor %}
+                </p>
 
-            <h2>Robots</h3>
-            <h3 class="no-bottom-margin">Aliases</h3> 
-            <small>renames all aliases to tag "{{data['tag']}}"</small>
-            <p class="bulk-listing"> 
-                {% for x in data['robots']['aliases'] %}
-                    {{x}}
-                {% endfor %}
-            </p>
+                <h3 class="no-bottom-margin">Implications</h3>
+                <small>add tag "{{data['tag']}}" to all tags in implications</small>
+                <p class="bulk-listing">
+                    {% for x in data['robots']['implications'] %}
+                        {{x}}
+                    {% endfor %}
+                </p>
 
-            <h3 class="no-bottom-margin">Implications</h3>
-            <small>add tag "{{data['tag']}}" to all tags in implications</small>
-            <p class="bulk-listing">
-                {% for x in data['robots']['implications'] %}
-                    {{x}}
+                <h3 class="no-bottom-margin">Replacements</h3>
+                <small>inverse of Aliases, replaces tag "{{data['tag']}}" with all replacements</small>
+                <p class="bulk-listing">
+                    {% for x in data['robots']['replace'] %}
+                        {{x}}
+                    {% endfor %}
+                </p><hr>
+            </div>
+            <div name="similar tags">
+                <h2>similar tags</h2>
+                <ul>
+                {% for x in data['similar_tags'] %}
+                    <li><a href="/wiki/{{x}}">{{x}}</a></li>
                 {% endfor %}
-            </p>
-
-            <h3 class="no-bottom-margin">Replacements</h3>
-            <small>inverse of Aliases, replaces tag "{{data['tag']}}" with all replacements</small>
-            <p class="bulk-listing">
-                {% for x in data['robots']['replacements'] %}
-                    {{x}}
-                {% endfor %}
-            </p>          
+                </ul>
+            </div>
         </div>
         <section class="imported-content" id="edit-section">
             {{ ending | safe }}

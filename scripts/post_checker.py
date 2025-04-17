@@ -53,8 +53,10 @@ def lev_distance(str1: str, str2: str) -> float:#get minimum number of edits to 
 def lev_similarity(str1: str, str2: str) -> float:
     return 1 - (lev_distance(str1, str2) / (max(len(str1), len(str2))))
 
-def check_spesific_key(key, value) -> bool:
+def check_spesific_key(key: str, value : str) -> bool:
     #print(f'checking {key} in {value}')
+    key = key.lower()
+    value = value.lower()
     if re.search(special_charecters, key) != None:
         if '~' in key:
             dist = lev_similarity(key, value)

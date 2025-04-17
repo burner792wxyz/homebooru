@@ -21,7 +21,7 @@
         <div style="background-color: var(--form-input-background);">
             <div class="input file optional upload_files hidden">
                 <label class="file optional" for="upload_files">Files</label>
-                <input id='clickform' multiple="multiple" class="file optional" type="file" name="upload[files][]" id="upload_files" >
+                <input id='clickform' multiple="multiple" class="file optional" type="file" name="upload[files][]">
             </div>
             
             <div class="dropzone-container" id="drop_zone" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);" ondragleave="dragoffHandler(event)" onclick="clickHandler(event)">
@@ -75,6 +75,7 @@
           }
         
         }
+        const upload_files = document.getElementById("clickform");
         upload_files.files = ev.dataTransfer.files;
         document.getElementById("new_upload").submit();
       }//

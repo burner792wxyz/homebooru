@@ -31,7 +31,8 @@ gelbooru_patterns = {
                       }
 
 danbooru_patterns = {
-    'posts per page' : 1, # this is set to 1 to hack the fact danbooru uses pages, not ids to determine post's shown
+    'posts per page' : 20, # this is set to 1 to hack the fact danbooru uses pages, not ids to determine post's shown
+    'page increment' : 1,
     'page url start' : 'https://danbooru.donmai.us/posts?tags=',
     'page url end' : '&page=',
     'total posts' : r'Serving (.*?) posts',  
@@ -51,6 +52,7 @@ danbooru_patterns = {
 
 realbooru_patterns = {
     'posts per page' : 40,
+    'page increment' : 40,
     'page url start' : 'https://www.realbooru.com/index.php?page=post&s=list&deleted=show&tags=',
     'page url end' : '&pid=',
     'total posts' : r'Serving (.*?) posts',  
@@ -106,11 +108,7 @@ def get_mediadata_info(filepath: str) -> dict | None:
                 
     except Exception as ex:
         print(f'in {filepath} {type(ex)} : {ex}')
-        #raise Exception
-        media_width = 0
-        media_height = 0
-        frame_rate = 0
-        length = 0       
+        return None    
 
 
     mediadata = {
@@ -273,7 +271,7 @@ def iterate():
     pids = []
     while ids_to_download > 0:
         pids.append(page_index)
-        page_index += site_patterns['posts per page']
+        page_index += site_patterns['page increment']
         ids_to_download -= site_patterns['posts per page']
 
     master_list_path = f'{dataset_path}/master_list.json'

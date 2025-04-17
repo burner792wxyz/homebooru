@@ -1,7 +1,7 @@
 '''
 module that defines all data classes used in homebooru
 '''
-import random, os, json
+import random, os, time
 import data_manager
 
 global prefix, dataset_path
@@ -169,8 +169,27 @@ class tag:
     def __init__(self):        
         self.invalid = str(''.join([chr(random.randint(33, 125)) for x in range(0, 100)]))
 
+    def create_new_tag(self, tag_name):
+        self.robots = {
+            "aliases" : [None],
+            "implications" : [None],
+            "replace" : [None],
+            "remove" : [None]
+        }
+
+        self.data_dictionary = {
+            "name" : tag_name,
+            "count" : 1,
+            "description" : None,
+            "last_edit" : round(time.time(),2),
+            "category" : None,
+            "robots" : self.robots
+        }
+        return self.data_dictionary
+
     def format_dict(self, tag_data: dict, strict = False):
         checksum = hash(str(tag_data))
+        print(f'tag data: {tag_data}')
 
         self.name = tag_data.get("name", self.invalid)
         self.count = tag_data.get("count", self.invalid)
@@ -186,7 +205,7 @@ class tag:
             "remove" : self.robots.get("remove", self.invalid)
         }
 
-        if ((strict) and (self.invalid in self.mediadata.values())):
+        if ((strict) and (self.invalid in self.robots.values())):
             raise KeyError(self.mediadata)
         self.robots = {key: (([None] if (self.invalid in value) else value) if isinstance(value, str) else value) for key, value in self.robots.items()}
 

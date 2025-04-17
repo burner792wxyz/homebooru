@@ -56,16 +56,13 @@ def create_folder(filepath: str) -> bool:
 def create_site(site: str):
     global dataset_path
     site_path = f'{dataset_path}/{site}'
-    if os.path.isdir(f'{site_path}/media'):
-        return False
     stats_changed()
     create_folder(f'{site_path}/media')
     
     tag_data = {'description': 'dictionary of posts'}
     create_file(f'{site_path}/post_data.json', tag_data, mode='j')
     master_list = read_json(f'{dataset_path}/master_list.json')
-    master_list.update({site : [0]})
-
+    master_list.update({site : [0]})    
     write_json(f'{dataset_path}/master_list.json', master_list)
 
 def create_post(post):
@@ -103,7 +100,7 @@ def create_all():
     create_folder(f'{dataset_path}')
 
     create_file(f'{dataset_path}/master_list.json', {"description":"list of posts", "master":[]}, mode='ja')
-    create_file(f'{dataset_path}/tag_dict.json', {"description":"dictionary of tags"}, mode='ja')
+    create_file(f'{dataset_path}/tag_dict.json', {"description":"dictionary of tags", "all" : {}}, mode='ja')
     create_file(f'{prefix}/static/temp/cache.json', {"stored_search" : {"search" : "", "ids" : [], 'start_page' : 0}}, mode='jw')
     create_file(f'{dataset_path}/stats.json', classes.stats.start_dict, mode='j')
 
@@ -158,7 +155,7 @@ def delete_post(post_name: str) -> bool:
     return True
 
 #other things
-def recount_tagdict(tag_dict) -> dict:
+def recount_tagdict(tag_dict: dict) -> dict:
     dataset_dir = f'{dataset_path}'
     tag_dict_path = f'{dataset_dir}/tag_dict.json'
 
@@ -176,9 +173,11 @@ def recount_tagdict(tag_dict) -> dict:
                 pass
                 print(f'tags == None @ {post_data[post]}') 
             for tag in tags:
+                tag = str(tag).lower()
                 if tag not in tag_dict['all']:
-                    starter = {tag:{'name': tag, 'count': 1, 'description': '', "last_edit": round(time.time(),2)}}
-                    tag_dict['all'].update(starter)
+                    tag_obj = classes.tag()
+                    starter = tag_obj.create_new_tag(tag)
+                    tag_dict['all'].update({tag: starter})
                 else:
                     if tag not in updated_tags:
                         tag_dict['all'][tag]['count'] = 0
@@ -190,15 +189,40 @@ def recount_tagdict(tag_dict) -> dict:
                     #print(f'{tag_dict["all"][tag]} not found in {folder}')
                     tag_dict['all'][tag]['count'] = 0
 
+    tag_dict['all'] = {dkey : value for dkey, value in sorted(tag_dict['all'].items(), key = lambda ele: ele[0])}
     write_json(tag_dict_path, tag_dict)
     return tag_dict
 
-def update_post_tags(modifier_tag, update_details: dict):#add automatic replacmet/alias & recount
+def update_post_tags(modifier_tag: str, update_details: dict):#add automatic replacmet/alias & recount
     dataset_dir = f'{dataset_path}'
     tag_dict_path = f'{dataset_dir}/tag_dict.json'
 
+    modifier_tag = modifier_tag.strip()
     modified_tags = [modifier_tag]
     [[modified_tags.append(tag) for tag in value if tag != 'None'] for value in update_details.values()]
+
+    #update tags
+    tag_dict = read_json(tag_dict_path)
+    for tag in modified_tags:
+        if tag in tag_dict['all'].keys():
+
+            if tag in update_details['aliases']:
+                tag_dict['all'][tag]['robots']['replace'].append(modifier_tag)
+
+            if tag in update_details['implications']:
+                pass
+
+            if tag in update_details['replace']:
+                tag_dict['all'][tag]['robots']['aliases'].append(modifier_tag)
+                print(f"updating tag at line 217 update post tags {tag_dict['all'][tag]['robots']}")
+
+            if tag in update_details['remove']:
+                pass
+        else:
+            print(f'{tag} not found in dict')
+    
+    if tag_dict != None:
+        write_json(tag_dict_path, tag_dict)
 
     #update posts
     tag_count = 0
@@ -215,6 +239,7 @@ def update_post_tags(modifier_tag, update_details: dict):#add automatic replacme
             assert type(tags) == list
             for tag in tags:
                 if tag in modified_tags:
+                    #print(f'post loop. tag: {tag}, updated tags: {update_details}, post:{post}')
                     if tag in update_details['aliases']: #renames all aliases to modifier_tag
                         post_data[post]['tags'].remove(tag)
                         post_data[post]['tags'].append(modifier_tag)
@@ -237,30 +262,6 @@ def update_post_tags(modifier_tag, update_details: dict):#add automatic replacme
             post_data[post]['tags'] = list(set(post_data[post]['tags']))
         
         write_json(log_location, post_data)
-    
-    #update tags
-    tag_dict = read_json(tag_dict_path)
-    for tag in tag_dict['all'].values():
-        if type(tag) != dict:
-            continue
-        
-        if tag in modified_tags:
-            if tag in update_details['aliases']:
-                tag_dict[tag]['replace'].append(modifier_tag)
-
-            if tag in update_details['implications']:
-                pass
-
-            if tag in update_details['replace']:
-                tag_dict[tag]['aliases'].append(modifier_tag)
-
-            if tag in update_details['remove']:
-                pass
-                    
-        else:
-            continue 
-    write_json(tag_dict_path, tag_dict)
-
 
 def update_stats():
     stat_path = f'{dataset_path}/stats.json'

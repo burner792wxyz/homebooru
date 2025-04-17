@@ -1,11 +1,8 @@
 #!\venv\Scripts\python.exe
 r'''
 to-do:
-    stop post pages/wiki from deleting posts
-    fix searching (non tags/regex)
     make wiki pages work
     #if I want to increase speed, change storage methods to split into chunks, and only load chunks if needed
-    add loading and saving files to data manager
 
 
 run in venv powershell by executing:
@@ -377,7 +374,6 @@ def wiki():
 
     all_args = flask.request.args.to_dict()
     search = {x[0]:x[1] for x in all_args.items() if (x[0] in ['name', 'category'] and x[1] != '')}
-    print(search)
     order = all_args.get('order', 'count')
     if order not in ['count', 'name', 'date']:
         order = 'count'
@@ -387,9 +383,11 @@ def wiki():
     if 'all' not in tag_dict.keys() or (update == 1):
         print('tag_dict not found, generating')
         data_manager.recount_tagdict(tag_dict)
+        data_manager.update_stats()
 
     tag_dict = tag_dict['all']
-    del tag_dict['description']
+    if 'description' in tag_dict.keys():
+        del tag_dict['description']
     if order == 'count':
         tag_list = sorted(tag_dict, key=lambda x: tag_dict[x]['count'], reverse=True)
     elif order == 'name':
@@ -463,9 +461,12 @@ def import_post():
         rating = all_args.get('rating', "")
         title = all_args.get('title', "")
         filepath = all_args.get('filepath', "")
+        site = all_args.get('site', "homebooru")
 
         full_list = data_manager.read_json(f'{dataset_path}\master_list.json')
-        id_list = [int(x) for x in full_list["homebooru"]]
+        if not site in full_list.keys():
+            data_manager.create_site(site)
+        id_list = [int(x) for x in full_list[site]]
 
         cleaned_tags = importer.tag_cleaner(tags)
         post_id = max(id_list)+1
@@ -486,7 +487,7 @@ def import_post():
             'storage_path': new_filepath
         }
         #add post info
-        tag_path = f'{dataset_path}/homebooru/tag_data.json'
+        tag_path = f'{dataset_path}/homebooru/post_data.json'
         all_post_data = data_manager.read_json(tag_path)
         all_post_data.update({str(post_id):post_data})
         data_manager.write_json(tag_path, all_post_data)
@@ -614,10 +615,12 @@ def wiki_page(tag):
     tag_dict = data_manager.read_json(f'{dataset_path}/tag_dict.json')
     edit = int(all_args.get('edit', 0)) #0=nothing, 1=enter details, 2=process edit 
 
+    #print(tag_dict)
     tag_data = tag_dict["all"].get(tag, None)
     if tag_data == None:
         content = f'tag not found <a href ="{href}">create one?</a>'
     else:
+        #print(tag_data)
         tag_obj = classes.tag()
         tag_data = tag_obj.format_dict(tag_data)
         if create:
@@ -628,6 +631,14 @@ def wiki_page(tag):
         count = tag_data.get("count", 0)
         last_updated = tag_data.get("last_updated", 0)
         robots = tag_data.get("robots", {"no robots yet":0})
+
+    similar_tags = []
+    for new_tag in tag_dict["all"].values():
+        if type(new_tag) != dict:
+            continue
+        is_similar = post_checker.post_checker(new_tag, {'name' : f'{tag}~'})
+        if is_similar: similar_tags.append(new_tag['name'])
+    similar_tags.remove(tag)
 
     ending =''
     if edit == 1:
@@ -677,7 +688,14 @@ def wiki_page(tag):
 
         return flask.redirect(f'/wiki/{tag}', code=302)
 
-    content = {"count" : count, 'last_updated': last_updated, 'tag': tag, 'desc': desc, 'robots': robots}
+    content = {
+        "count" : count,
+        'last_updated': last_updated,
+        'tag': tag,
+        'desc': desc,
+        'robots': robots,
+        'similar_tags': similar_tags
+        }
     return flask.render_template('wikipost.html', title = title, data = content, ending = ending)
 
 @app.route('/settings')
