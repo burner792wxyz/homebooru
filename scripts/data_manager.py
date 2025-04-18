@@ -337,6 +337,9 @@ def stats_changed() -> None:
     write_json(stat_path, stats)
     #print('stats are now invalid')
 
+def get_setting(setting: str):
+    return(read_json(f'{prefix}/config.json')[setting])
+
 import classes
 global prefix, dataset_path
 cwd = os.path.abspath(os.getcwd())

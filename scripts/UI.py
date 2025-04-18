@@ -14,7 +14,7 @@ import thumbnailizer, post_checker, importer, data_manager, classes #own scripts
 import flask, os, re, math, shutil, socket, time, tqdm, random, asyncio
 
 
-posts_per_page = 20
+posts_per_page = data_manager.get_setting('posts_per_page')
 
 global prefix, dataset_path
 cwd = os.path.abspath(os.getcwd())
@@ -358,7 +358,6 @@ def home():
 '''
         tag_htmls.append(tag_html)
     timing.update({'make tag html *end* / finish *start*' : time.time()})
-    print(search)
     search = ' '.join([f'{" ".join(value)}' if key == "tags" else f'{key}:{" ".join(value)}' for key, value in search.items()])
     timing.update({'finish *end*' : time.time()})
 
@@ -704,7 +703,8 @@ def settings():
 
 if __name__ == '__main__':
     global server
-    port = 5000
+    port = data_manager.get_setting('port')
+    port = 1741
     hostname = socket.gethostname()
     ip_address = socket.gethostbyname(hostname)
     print(f"Server started on {hostname} at {ip_address}:{port}")
