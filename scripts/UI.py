@@ -11,7 +11,7 @@ to run client:
     python source/scripts/UI.py
 '''
 import thumbnailizer, post_checker, importer, data_manager, classes #own scripts
-import flask, os, re, math, shutil, socket, time, tqdm, random, asyncio
+import flask, os, re, math, shutil, socket, time, tqdm, random, logging
 
 
 posts_per_page = data_manager.get_setting('posts_per_page')
@@ -283,7 +283,6 @@ def update_stats():
     
 @app.route('/favicon.ico')
 def favicon():
-    print('sending favicon')
     return flask.send_file(f'{prefix}/static/favicon.ico')
 #viewable views
 @app.route('/')
@@ -731,6 +730,9 @@ if __name__ == '__main__':
     hostname = socket.gethostname()
     ip_address = socket.gethostbyname(hostname)
     print(f"Server started on {hostname} at {ip_address}:{port}")
+
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
 
     data_manager.create_all()
     print(app.root_path)

@@ -290,3 +290,10 @@ picture {
     text-align: center;
     background: var(--from-search-box-background);
 }
+
+.top-button{
+    justify-content: center;
+    width: 100%;
+    display: flex;
+    padding: 1rem;
+}

@@ -40,9 +40,8 @@
         </aside>
         <div style="width: 100%;">
             {% if edit %}
-            <form action="/bulk_edit" method="get">
-                <label for="fake submit">Submit</label>
-                <input id="fake submit" type="button" onclick="bulk_edit_finish(event)">
+            <form action="/bulk_edit" method="get" class="top-button">
+                <input id="fake submit" type="button" onclick="bulk_edit_finish(event)" value="Submit">
                 <input name="data" hidden="True" id="bulk-edit data">
                 <input type="submit" id="bulk-edit submit" hidden="True">
             </form>

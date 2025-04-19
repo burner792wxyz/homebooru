@@ -42,9 +42,19 @@
 </body>
 <script type="text/javascript">
     function clickHandler(ev) {
-      document.getElementById('clickform').click()
+      const input_element = document.getElementById('clickform');
+      input_element.click();
+      input_element.addEventListener("change", clickfile, false);
 
     }
+
+    function clickfile() {
+      const file_list = this.files;
+      const upload_files = document.getElementById("clickform");
+      upload_files.files = file_list;
+      document.getElementById("new_upload").submit();
+    }
+
     function dragOverHandler(ev) {
       console.log('File(s) in drop zone');
       document.getElementById("drop_zone").style = "background: var(--uploads-dropzone-active);"
