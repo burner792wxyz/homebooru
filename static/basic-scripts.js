@@ -20,7 +20,7 @@ function add_parentlink(element_array) {
         var parent_href = web_path.match(".*?parent_href=%27%27%27(.*?)%27").at(-1);
     }
     else {
-        var parent_href = null;
+        var parent_href = web_path;
     }
 
     element_array.forEach(element => {

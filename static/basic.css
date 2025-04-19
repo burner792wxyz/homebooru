@@ -78,6 +78,11 @@ menu{
     line-height: 2em;
 }
 
+.post{
+    flex-direction: column-reverse;
+    align-items: center;
+}
+
 .header_block{
     display: block;
     height: min-content;

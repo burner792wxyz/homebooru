@@ -33,8 +33,8 @@ def build_post_html(passed_ids, all_post_data) -> tuple[list[str], list[str]]:
     tag_dict = {}
     post_html_list = []
 
-    for post in passed_ids:#build html of posts
-        post_site, post_id = post.split('_')
+    for post_name in passed_ids:#build html of posts
+        post_site, post_id = post_name.split('_')
         post_data = all_post_data[post_site][post_id]
 
         for tag in post_data['tags']:
@@ -49,7 +49,7 @@ def build_post_html(passed_ids, all_post_data) -> tuple[list[str], list[str]]:
         else: 
             media_class = 'image'
 
-        post_html = {"id" : post_id, "site": post_site, 'tags': post_data["tags"], 'img_src' : img_path, 'media_class': media_class}
+        post_html = {"name": post_name,"id" : post_id, "site": post_site, 'tags': post_data["tags"], 'img_src' : img_path, 'media_class': media_class}
         post_html_list.append(post_html)
     
     tag_list = sorted(tag_dict, key= lambda i: tag_dict[i], reverse=True)[0:20]
@@ -295,10 +295,13 @@ def home():
     pagechange()
     all_args = flask.request.args.to_dict()
     page = int(all_args.get('page', 0))
+    edit = all_args.get('edit', 0)
     search = {key : value.split(' ') for key, value in all_args.items()}
     tags = search.get('tags', None)
     if 'page' in search.keys():
         del search['page']
+    if "edit" in search.keys():
+        del search['edit']
 
     sort = "time_catalouged"
     if tags != None:
@@ -363,7 +366,27 @@ def home():
 
     print_times(timing, True)
     all_post_data = None
-    return flask.render_template('home.html', tags = tag_htmls, posts = post_html_list, pageinator = pageinator_obj, search=search)#
+    return flask.render_template('home.html', tags = tag_htmls, posts = post_html_list, pageinator = pageinator_obj, search=search, edit=(int(edit)==1))#
+
+@app.route('/bulk_edit')
+def bulk_edit():
+    global dataset_path
+    pagechange()
+    all_args = flask.request.args.to_dict()
+    data = all_args.get('data')
+    if type(data) != str:
+        return flask.redirect(r'/')
+    data = data.split('&')
+    data = {entry.split(':')[0] : entry.split(':')[1] for entry in data}
+    deletes = data.get('delete')
+    if deletes != None:
+        deletes = deletes.strip('[').strip(']')
+        deletes = [x.strip() for x in deletes.split(',')]
+
+    #delete selected
+    for post in deletes:
+        data_manager.delete_post(post)
+    return flask.redirect(r'/')
 
 @app.route('/wiki')
 @app.route('/wiki/')
