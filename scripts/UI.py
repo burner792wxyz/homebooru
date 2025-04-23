@@ -367,15 +367,17 @@ def home():
     all_post_data = None
     return flask.render_template('home.html', tags = tag_htmls, posts = post_html_list, pageinator = pageinator_obj, search=search, edit=(int(edit)==1))#
 
-@app.route('/bulk_edit')
+@app.route('/bulk_edit', methods=['POST'])
 def bulk_edit():
     global dataset_path
     pagechange()
-    all_args = flask.request.args.to_dict()
+    all_args = flask.request.form.to_dict()
     data = all_args.get('data')
+    
     if type(data) != str:
         return flask.redirect(r'/')
     data = data.split('&')
+    #[print(x) for x in data]
     data = {entry.split(':')[0] : entry.split(':')[1] for entry in data}
     deletes = data.get('delete')
     if deletes != None:

@@ -15,7 +15,7 @@
                 <a href="/import" class="nav-link">Import</a>
                 <a href="/settings" class="nav-link">Settings</a>
                 <li class="nav-item"> |  </li>
-                <li class="nav-item"> <a href="?edit=1" class="nav-link">Edit</a> </li>  
+                <li class="nav-item"> <a href="?edit=1" class="nav-link" id="bulk-edit-link">Edit</a> </li>  
             </menu>
         </nav>
     </header>
@@ -40,10 +40,10 @@
         </aside>
         <div style="width: 100%;">
             {% if edit %}
-            <form action="/bulk_edit" method="get" class="top-button">
-                <input id="fake submit" type="button" onclick="bulk_edit_finish(event)" value="Submit">
-                <input name="data" hidden="True" id="bulk-edit data">
-                <input type="submit" id="bulk-edit submit" hidden="True">
+            <form action="/bulk_edit" method="POST" class="top-button" id="bulk_edit_form">
+                <input type="hidden" id="bulk_edit_data" name="data" value="">
+                <input type="hidden" name="parent_href" id="parent_href" value="">
+                <button type="button" onclick="bulk_edit_finish()">Submit</button>
             </form>
             {% endif %}
             <section class="post_grid">
@@ -77,20 +77,25 @@
 <script>
     const post_array = document.getElementsByName("post-link");
     const parentlink = add_parentlink(post_array);
-    function bulk_edit_finish(ev){
-        const data_conainter = document.getElementById("bulk-edit data");
+
+    function bulk_edit_finish() {
         const all_deletes = document.getElementsByName("delete_box");
-        var checked_deletes = [];
+        let checked_deletes = [];
+
         all_deletes.forEach(element => {
-            if (element.checked == true){
+            if (element.checked) {
                 checked_deletes.push(element.id.split(" ")[1]);
-            };
+            }
         });
-        data_conainter.value = String(data_conainter.value) + "delete:[" + String(checked_deletes.join(', ')) + ']'
-        console.log(data_conainter.value)
 
-        data_conainter.value = String(data_conainter.value) + "&parent_href:" + parentlink
-        document.getElementById("bulk-edit submit").click()
-    };
+        const delete_str = `delete:[${checked_deletes.join(', ')}]`;
+        const parent_href_str = `parent_href:''${parentlink}'*'`;
 
+        document.getElementById("bulk_edit_data").value = delete_str;
+        document.getElementById("parent_href").value = parent_href_str;
+
+        document.getElementById("bulk_edit_form").submit();
+};
+
+    document.getElementById("bulk-edit-link").href = document.URL + '&edit=1'
 </script>

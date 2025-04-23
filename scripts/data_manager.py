@@ -115,10 +115,9 @@ def delete_post(post_name: str) -> bool:
     stats_changed()
     post_site, post_id = post_name.split('_')
 
+    #delete from site data list
     data_path = f'{dataset_path}/{post_site}/post_data.json'
     all_post_data = read_json(data_path)
-    #backup = all_post_data.copy
-    #error = False
     if str(post_id) in all_post_data.keys():
         del all_post_data[str(post_id)]
         write_json(data_path, all_post_data)
@@ -128,7 +127,7 @@ def delete_post(post_name: str) -> bool:
         #print(list(all_post_data)[0:20])
         print(f'{post_id} is not present in {data_path} ; could not delete')
 
-
+    #delete from master list
     master_list_path = f'{dataset_path}/master_list.json'
     master_list = read_json(master_list_path)
     if str(post_name) in master_list["master"]:
@@ -138,17 +137,15 @@ def delete_post(post_name: str) -> bool:
     else: 
         #print(list(master_list["master"])[0:20])
         print(f'{post_name} is not present in master_list["master"][master_index] ; could not delete')
-
-    if int(post_id) in master_list[str(post_site)]:
-        site_index = master_list[str(post_site)].index(int(post_id))
-        del master_list[str(post_site)][site_index]
-        print(f'succesfully deleted {int(post_id)} from master_list[str(post_site)]')
-    else:
-        #print(list(master_list[str(post_site)])[0:20])
-        print(f'{int(post_id)} is not present in master_list[str(post_site)] ; could not delete')
     
+    #add to deleted posts
+    if not 'deleted' in master_list.keys():
+        master_list.update({'deleted':[]})
+    master_list['deleted'].append(post_name)
+
     write_json(master_list_path, master_list)
 
+    #update stats
     stats = read_json(f'{dataset_path}/stats.json')
     stats["deleted_posts"] += 1
     write_json(f'{dataset_path}/stats.json', stats)
