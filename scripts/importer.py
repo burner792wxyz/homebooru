@@ -61,12 +61,12 @@ realbooru_patterns = {
     'post url suffix' : '',
     'post data' : r'<div class="col-md-7 col-lg-7 col-xl-8">([\S\s]*?)<div class="col-md-5 col-lg-5 col-xl-4">',
     'url' : "https://www.realbooru.com/",
-    'media link' : r'href="https://realbooru\.com//(images.*?)">Original</a>',
-    'original source' : None,
+    'media link' : r'(images.*?)">Original',#<a.+?>Original</a>
+    'original source' : r'Source.+?<.+?value="(.+?)"',
     'uploader id' : r'<a href="index\.php\?page=account&s=profile&id=(.*?)"',
     'uploader name' : r'<a href="index\.php\?page=account&s=profile.*?>(.*?)<',
-    'score' : r'<span id="psc(.*?)">(.*?)</span>',
-    'post title' : r'<h6(.*?)</h6>',
+    'score' : r'<span id="psc.*?">(.*?)</span>',
+    'post title' : r'<h6>(.*?)</h6>',
     'given tags' : r'<a class="tag-type-.*?>(.*?)>?</a>'
 }
 
@@ -126,14 +126,14 @@ def call_api(url):
     return requests.get(url, allow_redirects=True).text
 
 
-def download_post(post_id, website_class, site) -> str:
+def download_post(post_id, website_class, site) -> bool:
     global page_dict
     try:
         post = classes.post()
 
-        post_id = int(post_id)
-        if post_id in all_downloaded_ids:
-            return "continue: already downloaded"
+        post_name = f'{site}_{post_id}'
+        if post_name in all_downloaded_ids:
+            return False
         
         post_url = website_class['post url'] + str(post_id) + website_class['post url suffix']
         id_html = call_api(post_url)
@@ -146,7 +146,9 @@ def download_post(post_id, website_class, site) -> str:
         #parse id_html
         rel_link = re.search(website_class['media link'], id_html)
         if rel_link == None:
-            return
+            data_manager.create_file(f'{prefix}/a.html', id_html)
+            print('could not find media link')
+            return False
         rel_link = rel_link.group(1)
         media_link = website_class['url'] + rel_link
         #print(media_link)
@@ -161,9 +163,12 @@ def download_post(post_id, website_class, site) -> str:
         mediadata_info = get_mediadata_info(filepath)
         if mediadata_info == None:
             data_manager.delete_post(f'{site}_{post_id}')
-            return "continue"
+            return False
         
-        original_source = website_class['original source']
+        original_source = re.search(website_class['original source'], id_html)
+        if original_source != None:
+            original_source = original_source.group(1)
+
         uploader_id = re.search(website_class['uploader id'], id_html)
         if uploader_id != None:
             uploader_id = uploader_id.group(1)
@@ -202,29 +207,29 @@ def download_post(post_id, website_class, site) -> str:
         post_data = post.from_json(post_data)
 
         data_manager.create_post(post)
+        return True
     except Exception as Ex:
         print(f'error occured at id: {post_id}')
-        raise Ex    
+        raise Ex
 
 def download_page(url, website_class, site): #website_class contains a dict of regex patterns 
-    global all_downloaded_ids, files_downloaded
+    global all_downloaded_ids, downloaded_ids, total_ids
+    
     html = call_api(url)
     try:
         ids_on_page = [int(x) for x in re.findall(website_class['id class'], html)]#returns a list of all ids on page
         page_name = f'{re.findall(r"[.](.*?)[.]", url)[0]}id{ids_on_page[0]}to{ids_on_page[-1]}'
     except IndexError:
         print(f'no posts on {url}')
-        return None
-
-    if len(set(all_downloaded_ids+ids_on_page)) <= len(set(all_downloaded_ids)): #checks to see if page is already downloaded by checking if the combined set is bigger than just the previous set <3 I feel so smart
-        print(f'already downloaded page')
-        return
+        raise classes.errors.EmptyPage
 
     for post_id in tqdm.tqdm(ids_on_page, leave=False, position=3):
         result = download_post(post_id, website_class, site)
-
-    return(ids_on_page)
-    
+        #print(post_id, result, downloaded_ids)
+        if result == True:
+            downloaded_ids += 1
+        if downloaded_ids >= total_ids:
+            return
 
 def tag_cleaner(tag_list):
     clean_tags = []
@@ -254,7 +259,7 @@ def tag_cleaner(tag_list):
     return(sorted(list(set(clean_tags))))  
 
 def iterate():
-    global all_downloaded_ids, files_downloaded, prefix
+    global all_downloaded_ids, prefix, total_ids, downloaded_ids
     data_manager.create_all()
     start = time.time()
     total_ids = int(input("total ids: "))
@@ -265,35 +270,23 @@ def iterate():
     site_patterns = globals()[f'{site}_patterns']
 
     data_manager.create_site(site)
-
-    ids_to_download = total_ids-1
-    page_index = 1 #start from id 0
-    pids = []
-    while ids_to_download > 0:
-        pids.append(page_index)
-        page_index += site_patterns['page increment']
-        ids_to_download -= site_patterns['posts per page']
-
     master_list_path = f'{dataset_path}/master_list.json'
     master_list = data_manager.read_json(master_list_path)
-    all_downloaded_ids = master_list[site]
-    for i in tqdm.tqdm(pids, position=1):
+    all_downloaded_ids = master_list["active"] + master_list["deleted"]
 
+    downloaded_ids = 0
+    i=1
+    while downloaded_ids < total_ids:
         url = f'{site_patterns["page url start"]}{tags}{site_patterns["page url end"]}{i}'
-        #print(url)
-        if download_page(url, site_patterns, site) == None:
+        try:
+            download_page(url, site_patterns, site)
+        except classes.errors.EmptyPage:
             break
+        i += site_patterns['page increment']
 
-    
-    print(f'done in {round(time.time()-start, 2)} seconds')
-    print(f'{len(files_downloaded)} new files downloaded')
-    try:
-        all_downloaded_ids
-    except: 
-        all_downloaded_ids = files_downloaded
-    print(f'{len(all_downloaded_ids)} total files downloaded')
-    files_downloaded = []
-    all_downloaded_ids = None
+    print(f'\ndone in {round(time.time()-start, 2)} seconds')
+    print(f'{downloaded_ids} new files downloaded')
+    print(f'{len(all_downloaded_ids)+downloaded_ids} total files downloaded')
 
 if __name__ == '__main__':
     data_manager.create_all()

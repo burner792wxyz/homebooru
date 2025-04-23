@@ -88,7 +88,7 @@ def create_post(post):
         full_list.update({post.site : post.num_id})
 
     if 'master' in full_list.keys():
-        full_list['master'].append(post.id)
+        full_list["active"].append(post.id)
     else:
         full_list.update({'master' : post.id})  
     write_json(master_list_path, full_list)
@@ -99,7 +99,7 @@ def create_all():
     create_folder(f'{prefix}/static/temp/media')
     create_folder(f'{dataset_path}')
 
-    create_file(f'{dataset_path}/master_list.json', {"description":"list of posts", "master":[]}, mode='ja')
+    create_file(f'{dataset_path}/master_list.json', {"description":"list of posts", "master":[], 'deleted':[]}, mode='ja')
     create_file(f'{dataset_path}/tag_dict.json', {"description":"dictionary of tags", "all" : {}}, mode='ja')
     create_file(f'{prefix}/static/temp/cache.json', {"stored_search" : {"search" : "", "ids" : [], 'start_page' : 0}}, mode='jw')
     create_file(f'{dataset_path}/stats.json', classes.stats.start_dict, mode='j')
@@ -130,13 +130,13 @@ def delete_post(post_name: str) -> bool:
     #delete from master list
     master_list_path = f'{dataset_path}/master_list.json'
     master_list = read_json(master_list_path)
-    if str(post_name) in master_list["master"]:
-        master_index = master_list["master"].index(str(post_name))
-        del master_list["master"][master_index]
-        print(f'succesfully deleted {post_name} from master_list["master"][master_index]')
+    if str(post_name) in master_list["active"]:
+        master_index = master_list["active"].index(str(post_name))
+        del master_list["active"][master_index]
+        print(f'succesfully deleted {post_name} from master_list["active"][master_index]')
     else: 
-        #print(list(master_list["master"])[0:20])
-        print(f'{post_name} is not present in master_list["master"][master_index] ; could not delete')
+        #print(list(master_list["active"])[0:20])
+        print(f'{post_name} is not present in master_list["active"][master_index] ; could not delete')
     
     #add to deleted posts
     if not 'deleted' in master_list.keys():
@@ -264,18 +264,19 @@ def update_stats():
     stat_path = f'{dataset_path}/stats.json'
     stats = read_json(stat_path)
 
-    master_list = read_json(f'{dataset_path}/master_list.json')['master']
+    master_list = read_json(f'{dataset_path}/master_list.json')
     total_posts = 0
     cached_post_dict = None
     post_data_dict = None
-    for post_id in tqdm.tqdm(master_list):
+    for post_id in tqdm.tqdm(master_list["active"]):
         site = post_id.split('_')[0]
         if site != cached_post_dict:
             post_data_dict = read_json(f'{dataset_path}/{site}/post_data.json', False)
             cached_post_dict = site
         if check_post(post_id, post_data_dict) : total_posts += 1
     stats['total_posts'] = total_posts
-    stats['pages'] = total_posts//20
+    stats['deleted_posts'] = len(master_list['deleted'])
+    stats['pages'] = total_posts//get_setting('posts_per_page')
     
     tag_dict = read_json(f'{dataset_path}/tag_dict.json')
     tag_dict = recount_tagdict(tag_dict)['all']

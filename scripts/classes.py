@@ -12,6 +12,8 @@ dataset_path = data_manager.read_json(f'{prefix}/config.json')["dataset_path"]
 class errors:
     class PostNotFound(Exception):
         pass  
+    class EmptyPage(Exception):
+        pass
 
 
 class search_methods:
@@ -30,6 +32,13 @@ class search_methods:
     }
     post_sort_aliases = {}
 
+class master_list:
+    starter_dict = {
+        "description":"list of posts",
+        "master":[],
+        "active":[],
+        'deleted':[]
+        }
 
 class settings:
     pass

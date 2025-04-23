@@ -96,6 +96,10 @@
 
         document.getElementById("bulk_edit_form").submit();
 };
-
-    document.getElementById("bulk-edit-link").href = document.URL + '&edit=1'
+    if ((window.location.pathname + window.location.search).includes('?'))
+        {document.getElementById("bulk-edit-link").href = document.URL + '&edit=1';}
+    else {
+        document.getElementById("bulk-edit-link").href = document.URL + '?edit=1';
+    };
+    
 </script>

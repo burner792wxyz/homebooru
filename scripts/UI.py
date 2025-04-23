@@ -199,7 +199,7 @@ def get_id_list(all_post_data: dict, sort_value = "time_catalouged", safe=True):
     print(f'borken ids {broken_ids}')
 
     id_list = data_manager.read_json(f'{dataset_path}\master_list.json')
-    id_list = sorted(set(id_list["master"]), key=sorting_function, reverse=reverse)
+    id_list = sorted(set(id_list["active"]), key=sorting_function, reverse=reverse)
     id_list = [x for x in id_list if x not in broken_ids]
     return(id_list)  
 
@@ -515,7 +515,7 @@ def import_post():
         data_manager.write_json(tag_path, all_post_data)
 
         #update master list
-        full_list["master"].append(f"homebooru_{post_id}")
+        full_list["active"].append(f"homebooru_{post_id}")
         full_list["homebooru"].append(post_id)
         data_manager.write_json(f'{dataset_path}\master_list.json', full_list)
         
