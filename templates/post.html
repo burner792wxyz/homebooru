@@ -50,7 +50,11 @@
             <div class="notice notice-resized imported-content" id="image-resize-notice" hidden="True">a<a name="link-to-self" href="?resize=true">view original</a></div>
                 {{ media | safe }}
                 <div class="from-search">
-                    <span>search: <a id="search-link"> </a></span>
+                    <span class="flex-between">
+                        <a id="prev-link" style="justify-self: left;" href="/prev/{{ info['ID'] }}?search=">←</a>
+                        <span>search: <a id="search-link"></a></span>
+                        <a id="next-link" style="justify-self: right;" href="/next/{{ info['ID'] }}?search=">→</a>
+                    </span>
                 </div>
                 <form id="rank-bar-form" action='' method="post" style="display: flex; justify-content: space-between;" >
                     <div class="rank-bar">
@@ -96,8 +100,11 @@
     //add search if posibble
     const search_link = document.getElementById("search-link");
     search_link.href = parent_href;
-    var search_text = parent_href.split('tags=').at(-1).split('+').join(' ');
-    search_link.innerText = search_text.replace('%3A', ':')
+    var search_text = parent_href.split('?').at(-1);
+    search_link.innerText = search_text.split('&').join(' ').replace('%3A', ':')
+    //add to prev and next links
+    document.getElementById(id="prev-link").href = document.getElementById("prev-link").href + "'''" + parent_href + "'*'"
+    document.getElementById(id="next-link").href = document.getElementById("next-link").href + "'''" + parent_href + "'*'"
 
     const post_link = window.location.href + "?"
     const download_link = document.getElementById("post-media").src;

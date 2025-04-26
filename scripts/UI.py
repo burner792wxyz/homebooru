@@ -61,6 +61,7 @@ def paginator(search, id_list, page = None) -> list:
     if page == None:
         page = int(search.get('page', 0))
     extra_args = '&'+'&'.join([f'{key}={"+".join(value)}' for key, value in search.items()])
+    if extra_args == '&': extra_args = ''
     pageinator = []
 
     total_posts = len(id_list)
@@ -261,6 +262,42 @@ def parse_args(url = None) -> dict:
             args.update({str(key) : value})
     return(args)
 
+def search_func(page, tags):
+    global dataset_path
+    sort = "time_catalouged"
+    if tags != None:
+        tags = tags.copy()    
+        for i, tag in enumerate(tags):
+            if "sort" in tag.lower() or "order" in tag.lower():
+                sort = tag.split(':')[-1]
+                del tags[i]
+        tags = {'tags' : tags}
+    else:
+        tags = {}
+
+    all_sites = [f'{path}/post_data.json' for path in [f'{dataset_path}/{x}' for x in os.listdir(dataset_path)] if os.path.isdir(path)]
+    all_post_data = {site.split('/')[-2] : data_manager.read_json(site) for site in all_sites}
+
+    #sort master_list of ids
+    id_list = get_id_list(all_post_data, sort_value=sort)
+    #search
+    passed_ids = []
+    for post in tqdm.tqdm(id_list):
+        if len(passed_ids) >= (page+5)*posts_per_page+2: 
+            print(f'finished checking posts at: {(page+1)*posts_per_page+2}')
+            break
+        if (tags == []) or (tags == {'tags': []}):
+            passed_ids.append(post)
+        else:
+            post_site, post_id = post.split('_')
+            post_data = all_post_data[post_site][post_id]
+            post_status = post_checker.post_checker(post_data, tags)
+            if not post_status:
+                continue
+            else:
+                #print(f'\n {post}')
+                passed_ids.append(post)
+    return all_post_data, passed_ids
 
 #flask loop
 app = flask.Flask(__name__, static_folder = f'{prefix}/static', template_folder = f'{os.path.abspath(os.getcwd())}/source/templates')
@@ -284,88 +321,6 @@ def update_stats():
 @app.route('/favicon.ico')
 def favicon():
     return flask.send_file(f'{prefix}/static/favicon.ico')
-#viewable views
-@app.route('/')
-@app.route('/posts')
-def home():
-    timing = {}
-    timing.update({'func start *start*' : time.time()})
-    global posts_per_page, dataset_path
-    pagechange()
-    all_args = flask.request.args.to_dict()
-    page = int(all_args.get('page', 0))
-    edit = all_args.get('edit', 0)
-    search = {key : value.split(' ') for key, value in all_args.items()}
-    tags = search.get('tags', None)
-    if 'page' in search.keys():
-        del search['page']
-    if "edit" in search.keys():
-        del search['edit']
-
-    sort = "time_catalouged"
-    if tags != None:
-        tags = tags.copy()    
-        for i, tag in enumerate(tags):
-            if "sort" in tag.lower() or "order" in tag.lower():
-                sort = tag.split(':')[-1]
-                del tags[i]
-        tags = {'tags' : tags}
-    else:
-        tags = {}
-
-    timing.update({'func start *end* / get all_post_data *start*' : time.time()})
-    all_sites = [f'{path}/post_data.json' for path in [f'{dataset_path}/{x}' for x in os.listdir(dataset_path)] if os.path.isdir(path)]
-    all_post_data = {site.split('/')[-2] : data_manager.read_json(site) for site in all_sites}
-    timing.update({'get all_post_data *end* / build id list *start*' : time.time()})
-
-    #sort master_list of ids
-    id_list = get_id_list(all_post_data, sort_value=sort)
-    #search
-    passed_ids = []
-    for post in tqdm.tqdm(id_list):
-        if len(passed_ids) >= (page+5)*posts_per_page+2: 
-            print(f'finished checking posts at: {(page+1)*posts_per_page+2}')
-            break
-        if (tags == []) or (tags == {'tags': []}):
-            passed_ids.append(post)
-        else:
-            post_site, post_id = post.split('_')
-            post_data = all_post_data[post_site][post_id]
-            post_status = post_checker.post_checker(post_data, tags)
-            if not post_status:
-                continue
-            else:
-                #print(f'\n {post}')
-                passed_ids.append(post)
-
-    pageinator_obj = paginator(search, passed_ids, page)
-
-    passed_ids = passed_ids[page*posts_per_page :]
-    timing.update({'build id list *end* / build post html *start*' : time.time()})
-
-    passed_ids = passed_ids[:posts_per_page]
-    tag_list, post_html_list = build_post_html(passed_ids, all_post_data)
-    timing.update({'build post html *end* / make tag html *start*' : time.time()})
-    
-    #make tag list
-    tag_htmls = []
-    for tag in tag_list:
-        wiki_link = f'/wiki/{tag}'
-        search_link = f'/posts?tags={tag}'
-        tag_html =f'''
-    <li>
-        <a class="wiki-link" href={wiki_link}>?</a>
-        <a class="search-link" href="{search_link}">{tag.replace('_', ' ')}</a>
-    </li>
-'''
-        tag_htmls.append(tag_html)
-    timing.update({'make tag html *end* / finish *start*' : time.time()})
-    search = ' '.join([f'{" ".join(value)}' if key == "tags" else f'{key}:{" ".join(value)}' for key, value in search.items()])
-    timing.update({'finish *end*' : time.time()})
-
-    print_times(timing, True)
-    all_post_data = None
-    return flask.render_template('home.html', tags = tag_htmls, posts = post_html_list, pageinator = pageinator_obj, search=search, edit=(int(edit)==1))#
 
 @app.route('/bulk_edit', methods=['POST'])
 def bulk_edit():
@@ -388,6 +343,88 @@ def bulk_edit():
     for post in deletes:
         data_manager.delete_post(post)
     return flask.redirect(r'/')
+
+@app.route("/prev/<post_name>", methods=['GET', 'POST'])
+def prev(post_name):
+    global posts_per_page, dataset_path
+    pagechange()
+    all_args = flask.request.args.to_dict()
+    page = int(all_args.get('page', 0))
+    search = {key : value.replace(' ', '+') for key, value in all_args.items()}
+    parent_href=search["search"]
+    if not 'tags' in parent_href:
+        tags=None
+    else:
+        tags = [parent_href.split('?')[-1].strip("'*'").split('tags=')[-1]]
+    all_post_data, passed_ids = search_func(page, tags)
+
+    if '_' not in post_name:
+        return flask.abort(404)
+    ind = max(0,passed_ids.index(post_name)-1)
+    post = passed_ids[ind]
+    return flask.redirect(f'/posts/{post}?parent_href={parent_href}')
+    
+@app.route("/next/<post_name>", methods=['GET', 'POST'])
+def next(post_name):
+    global posts_per_page, dataset_path
+    pagechange()
+    all_args = flask.request.args.to_dict()
+    page = int(all_args.get('page', 0))
+    search = {key : value.replace(' ', '+') for key, value in all_args.items()}
+    parent_href=search["search"]
+    if not 'tags' in parent_href:
+        tags=None
+    else:
+        tags = [parent_href.split('?')[-1].strip("'*'").split('tags=')[-1]]
+    all_post_data, passed_ids = search_func(page, tags)
+
+    if '_' not in post_name:
+        return flask.abort(404)
+    ind = max(0,passed_ids.index(post_name)+1)
+    post = passed_ids[ind]
+    return flask.redirect(f'/posts/{post}?parent_href={parent_href}')
+    
+
+#viewable views
+@app.route('/')
+@app.route('/posts')
+def home():
+    global posts_per_page, dataset_path
+    pagechange()
+    all_args = flask.request.args.to_dict()
+    page = int(all_args.get('page', 0))
+    edit = all_args.get('edit', 0)
+    search = {key : value.split(' ') for key, value in all_args.items()}
+    tags = search.get('tags', None)
+    if 'page' in search.keys():
+        del search['page']
+    if "edit" in search.keys():
+        del search['edit']
+    all_post_data, passed_ids = search_func(page, tags)
+
+    pageinator_obj = paginator(search, passed_ids, page)
+
+    passed_ids = passed_ids[page*posts_per_page :]
+
+    passed_ids = passed_ids[:posts_per_page]
+    tag_list, post_html_list = build_post_html(passed_ids, all_post_data)
+    
+    #make tag list
+    tag_htmls = []
+    for tag in tag_list:
+        wiki_link = f'/wiki/{tag}'
+        search_link = f'/posts?tags={tag}'
+        tag_html =f'''
+    <li>
+        <a class="wiki-link" href={wiki_link}>?</a>
+        <a class="search-link" href="{search_link}">{tag.replace('_', ' ')}</a>
+    </li>
+'''
+        tag_htmls.append(tag_html)
+    search = ' '.join([f'{" ".join(value)}' if key == "tags" else f'{key}:{" ".join(value)}' for key, value in search.items()])
+
+    all_post_data = None
+    return flask.render_template('home.html', tags = tag_htmls, posts = post_html_list, pageinator = pageinator_obj, search=search, edit=(int(edit)==1))#
 
 @app.route('/wiki')
 @app.route('/wiki/')
@@ -624,7 +661,7 @@ def post_page(post_name):
         return flask.redirect(f'/posts/{post_name}', code=302)
 
     return flask.render_template('post.html', title = title, tag_list = tag_htmls, info = other_postdata_html , media = media, edit = ending)
-    
+
 @app.route('/wiki/<tag>', methods=['GET', 'POST'])
 def wiki_page(tag):
     pagechange()

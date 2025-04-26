@@ -5,7 +5,12 @@ function resize_check(){
         media.classList.remove("resized-media")
     }
     const resize_notice = document.getElementById("image-resize-notice");
-    var resize_amount = Math.round(Math.max(Math.min(media.offsetHeight/media.naturalHeight, 1), Math.min(media.offsetWidth/media.naturalWidth, 1))*100);
+    if (media.naturalHeight != undefined){
+        var resize_amount = Math.round(Math.max(Math.min(media.offsetHeight/media.naturalHeight, 1), Math.min(media.offsetWidth/media.naturalWidth, 1))*100);
+    }
+    else {
+        var resize_amount = 100
+    }
     resize_notice.childNodes[0].nodeValue = 'resized to ' + String(resize_amount) + '% ';
     console.log('resize_amount: '+resize_amount)
     if (resize_amount <= 98) {
