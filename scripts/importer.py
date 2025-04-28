@@ -8,7 +8,7 @@ cwd = os.path.abspath(os.getcwd())
 prefix = f'{cwd}/source'
 dataset_path = data_manager.read_json(f'{prefix}/config.json')["dataset_path"]
 
-image_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'svg', 'gif']
+image_extensions = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'svg']
 video_extensions = ['mp4', 'webm', 'avi', 'flv', 'mov', 'wmv', 'mkv', 'm4v']
 
 files_downloaded = []
@@ -31,7 +31,7 @@ gelbooru_patterns = {
                       }
 
 danbooru_patterns = {
-    'posts per page' : 20, # this is set to 1 to hack the fact danbooru uses pages, not ids to determine post's shown
+    'posts per page' : 20,
     'page increment' : 1,
     'page url start' : 'https://danbooru.donmai.us/posts?tags=',
     'page url end' : '&page=',
@@ -42,7 +42,7 @@ danbooru_patterns = {
     'post data' : r'<div class="sidebar-container flex sm:flex-col gap-3">([\S\s]+?)<div id="tooltips"></div>',
     'url' : "https://cdn.donmai.us/original/",
     'media link' : r'<a href="https://cdn.donmai.us/original/(.+?)".+?</a>',
-    'original source' : r'<li id="post-info-source">Source: <a rel="external noreferrer nofollow" href="(.+?)">.+?</a>',
+    'original source' : r'<li id="post-info-source">Source: .*? href="(.*?)">',
     'uploader id' : r'Uploader: <a class=".+?" data-user-id="(.+?)"',
     'uploader name' : r'Uploader: <a class=".+?" data-user-id=".+?" data-user-name="(.+?)"',
     'score' : r'<span class="post-score[\S\s]+?>([\d])</a>',
@@ -80,7 +80,7 @@ def get_mediadata_info(filepath: str) -> dict | None:
             frame_rate = 0
             length = 0                
 
-        elif file_extension == 'GIF':
+        elif file_extension.upper() == 'GIF':
             try:
                 img = PIL.Image.open(filepath)
                 media_width, media_height = img.size
@@ -96,7 +96,8 @@ def get_mediadata_info(filepath: str) -> dict | None:
                         break
                 length = length/1000
                 frame_rate = frames/length
-            except:
+            except Exception as ex:
+                print(ex)
                 return None
 
         else:
@@ -138,6 +139,7 @@ def download_post(post_id, website_class, site) -> bool:
         post_url = website_class['post url'] + str(post_id) + website_class['post url suffix']
         id_html = call_api(post_url)
         id_html = re.search(website_class['post data'] , id_html)
+        #data_manager.create_file(f'{dataset_path}/{post_id}.html', str(id_html.groups()))
         if len(id_html.groups()) > 0: id_html = id_html.groups()[0]
         else: 
             print(id_html.groups())
@@ -180,6 +182,8 @@ def download_post(post_id, website_class, site) -> bool:
         score = re.search(website_class['score'], id_html)
         if score != None:
             score = score.group(1)
+        else:
+            score = 0
 
         title = re.search(website_class['post title'], id_html)
         if title != None:
@@ -213,7 +217,7 @@ def download_post(post_id, website_class, site) -> bool:
         raise Ex
 
 def download_page(url, website_class, site): #website_class contains a dict of regex patterns 
-    global all_downloaded_ids, downloaded_ids, total_ids
+    global all_downloaded_ids, downloaded_ids, total_ids, pbar
     
     html = call_api(url)
     try:
@@ -223,11 +227,12 @@ def download_page(url, website_class, site): #website_class contains a dict of r
         print(f'no posts on {url}')
         raise classes.errors.EmptyPage
 
-    for post_id in tqdm.tqdm(ids_on_page, leave=False, position=3):
+    for post_id in ids_on_page:
         result = download_post(post_id, website_class, site)
         #print(post_id, result, downloaded_ids)
         if result == True:
             downloaded_ids += 1
+            pbar.update(1)
         if downloaded_ids >= total_ids:
             return
 
@@ -259,7 +264,7 @@ def tag_cleaner(tag_list):
     return(sorted(list(set(clean_tags))))  
 
 def iterate():
-    global all_downloaded_ids, prefix, total_ids, downloaded_ids
+    global all_downloaded_ids, prefix, total_ids, downloaded_ids, pbar
     data_manager.create_all()
     start = time.time()
     total_ids = int(input("total ids: "))
@@ -276,6 +281,7 @@ def iterate():
 
     downloaded_ids = 0
     i=1
+    pbar = tqdm.tqdm(total=total_ids)
     while downloaded_ids < total_ids:
         url = f'{site_patterns["page url start"]}{tags}{site_patterns["page url end"]}{i}'
         try:
@@ -283,6 +289,7 @@ def iterate():
         except classes.errors.EmptyPage:
             break
         i += site_patterns['page increment']
+    pbar.close()
 
     print(f'\ndone in {round(time.time()-start, 2)} seconds')
     print(f'{downloaded_ids} new files downloaded')

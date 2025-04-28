@@ -1,7 +1,7 @@
 '''
 create folders and shii
 '''
-import os, orjson, time, tqdm # type: ignore
+import os, orjson, asyncio, tqdm # type: ignore
 from PIL import Image
 
 #json handling

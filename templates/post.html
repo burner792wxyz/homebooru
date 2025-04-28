@@ -34,9 +34,9 @@
                <li> Uploader: {{ info["Uploader"] }} </li>
                <li> Date: {{ info["Date"] }} </li>
                <li> Size: {{ info["Size"] }}</li>
-               <li> Source:  None & <a href="https://realbooru.com/images/4b/6b/4b6bd31a477caa9fcfef3d316c98b4e0.webm">realbooru</a> </li>
+               <li> Source: {{info["Source"] | safe }} </li>
                <li> Rating: {{ info["Rating"] }} </li>
-               <li> Original Score: {{ info["Score"] }} </li>
+               <li> Original Score: {{ info["Score"]}} </li>
                <li id="info-rank"> Homebooru Rank: {{ info["Homebooru_Rank"] }} </li>
                <li> Filepath: {{ info["Filepath"] }} </li>  
             </ul>

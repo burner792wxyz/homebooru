@@ -1,13 +1,7 @@
 #!\venv\Scripts\python.exe
 r'''
-to-do:
-    make wiki pages work
-    #if I want to increase speed, change storage methods to split into chunks, and only load chunks if needed
-
-
 run in venv powershell by executing:
     venv\Scripts\Activate.ps1
-to run client:
     python source/scripts/UI.py
 '''
 import thumbnailizer, post_checker, importer, data_manager, classes #own scripts

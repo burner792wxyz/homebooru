@@ -106,6 +106,8 @@ menu{
 .resized-media {
     aspect-ratio: initial;
     max-width: 100%;
+    max-height: 90vh;
+    width: auto;
     height: auto;
 }
 

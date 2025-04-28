@@ -4,6 +4,8 @@ function resize_check(){
     if (resize_bool == true) {
         media.classList.remove("resized-media")
     }
+    console.log(`curr height ${media.offsetHeight} orig height ${media.naturalHeight}`)
+    console.log(`curr width ${media.offsetWidth} orig width ${media.naturalWidth}`)
     const resize_notice = document.getElementById("image-resize-notice");
     if (media.naturalHeight != undefined){
         var resize_amount = Math.round(Math.max(Math.min(media.offsetHeight/media.naturalHeight, 1), Math.min(media.offsetWidth/media.naturalWidth, 1))*100);
