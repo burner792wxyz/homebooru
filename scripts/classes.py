@@ -179,6 +179,8 @@ class tag:
         self.invalid = str(''.join([chr(random.randint(33, 125)) for x in range(0, 100)]))
 
     def create_new_tag(self, tag_name):
+        num_id = data_manager.get_setting("tag_count")
+        data_manager.change_setting("tag_count", num_id+1)
         self.robots = {
             "aliases" : [None],
             "implications" : [None],
@@ -188,6 +190,7 @@ class tag:
 
         self.data_dictionary = {
             "name" : tag_name,
+            "id" : num_id,
             "count" : 1,
             "description" : None,
             "last_edit" : round(time.time(),2),

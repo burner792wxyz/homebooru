@@ -67,7 +67,7 @@ realbooru_patterns = {
     'uploader name' : r'<a href="index\.php\?page=account&s=profile.*?>(.*?)<',
     'score' : r'<span id="psc.*?">(.*?)</span>',
     'post title' : r'<h6>(.*?)</h6>',
-    'given tags' : r'<a class="tag-type-.*?>(.*?)>?</a>'
+    'given tags' : r'<a class="tag-type-.*?>(.*?)</a>'
 }
 
 
@@ -189,12 +189,12 @@ def download_post(post_id, website_class, site) -> bool:
         if title != None:
             title = title.group(1)
 
-        given_tags = [f'general:{x.group(1)}' for x in re.finditer(website_class['given tags'], id_html)]
+        given_tags = [f'{x.group(1)}' for x in re.finditer(website_class['given tags'], id_html)]
         rating = 'None'
 
         mediadata_info.update({'original_source' : original_source, "media_link" : media_link})
         #cleaned_tags = given_tags
-        cleaned_tags = tag_cleaner(given_tags)
+        cleaned_tags = data_manager.tag_cleaner(given_tags)
         post_data = {#mutables first
             'id': f'{site}_{post_id}',
             'tags': cleaned_tags,
@@ -236,33 +236,6 @@ def download_page(url, website_class, site): #website_class contains a dict of r
         if downloaded_ids >= total_ids:
             return
 
-def tag_cleaner(tag_list):
-    clean_tags = []
-    for tag in tag_list:
-        tag = tag.split(':')[-1]
-        correction_found = False
-        data_manager.read_json(f'{dataset_path}/tag_dict.json')
-        '''
-        for mapping in tag_dict:
-            if re.fullmatch(mapping[1], tag) != None:
-                correction_found = True
-                if mapping[0] == 'alias':
-                    clean_tags.append(mapping[2])
-
-                if mapping[0] == 'implication':
-                    clean_tags.append(mapping[2])
-                    clean_tags.append(tag)
-
-                if mapping[0] == 'substitution':
-                    clean_tags.append(re.sub(mapping[1], tag))
-        '''
-        if correction_found == False:
-            clean_tags.append(tag)
-        
-    clean_tags = [re.sub(r' ', '_', x) for x in clean_tags]
-    #print(clean_tags)
-    return(sorted(list(set(clean_tags))))  
-
 def iterate():
     global all_downloaded_ids, prefix, total_ids, downloaded_ids, pbar
     data_manager.create_all()
@@ -296,6 +269,5 @@ def iterate():
     print(f'{len(all_downloaded_ids)+downloaded_ids} total files downloaded')
 
 if __name__ == '__main__':
-    data_manager.create_all()
     iterate()
 

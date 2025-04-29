@@ -96,12 +96,13 @@ def create_post(post):
 
 def create_all():
     global prefix, dataset_path
+    print(f'called create_all in datamanager from {__name__} {__file__}')
     create_folder(f'{prefix}/static/temp/media')
     create_folder(f'{dataset_path}')
 
     create_file(f'{dataset_path}/master_list.json', {"description":"list of posts", "master":[], 'deleted':[]}, mode='ja')
     create_file(f'{dataset_path}/tag_dict.json', {"description":"dictionary of tags", "all" : {}}, mode='ja')
-    create_file(f'{prefix}/static/temp/cache.json', {"stored_search" : {"search" : "", "ids" : [], 'start_page' : 0}}, mode='jw')
+    #create_file(f'{prefix}/static/temp/cache.json', {"stored_search" : {"search" : "", "ids" : [], 'start_page' : 0}}, mode='jw')
     create_file(f'{dataset_path}/stats.json', classes.stats.start_dict, mode='j')
 
     create_site('homebooru')
@@ -234,29 +235,7 @@ def update_post_tags(modifier_tag: str, update_details: dict):#add automatic rep
                 continue
             tags = post_data[post].get('tags')
             assert type(tags) == list
-            for tag in tags:
-                if tag in modified_tags:
-                    #print(f'post loop. tag: {tag}, updated tags: {update_details}, post:{post}')
-                    if tag in update_details['aliases']: #renames all aliases to modifier_tag
-                        post_data[post]['tags'].remove(tag)
-                        post_data[post]['tags'].append(modifier_tag)
-
-                    if tag in update_details['implications']:#if tags(in post) is in implications, add modifier_tag
-                        #print(post_data[post]['tags'])
-                        post_data[post]['tags'].append(modifier_tag)
-                        #print(post_data[post]['tags'])
-
-                    if tag in update_details['replace']:
-                        pass
-
-                    if tag in update_details['remove']:
-                        post_data[post]['tags'].remove(modifier_tag)
-                        
-                else:
-                    continue 
-            
-            if modifier_tag in tags: tag_count += 1
-            post_data[post]['tags'] = list(set(post_data[post]['tags']))
+            tags = tag_cleaner(tags)
         
         write_json(log_location, post_data)
 
@@ -316,6 +295,35 @@ def check_post(post_id, post_data_dict) -> bool:
         delete_post(post_id)
         return False
 
+def tag_cleaner(tag_list):
+    clean_tags = []
+    tag_dict = read_json(f'{dataset_path}/tag_dict.json')['all']
+    for tag in tag_list:
+        assert type(tag) == str
+        tag = tag.strip().replace(' ', '_')
+        if tag in tag_dict:
+            full_tag = tag_dict[tag]
+            full_tag['count'] += 1
+
+            implications = [x for x in full_tag['robots']['implications'] if x != None]
+            if len(implications) != 0:
+                clean_tags.extend(implications)
+                
+            replacements = [x for x in full_tag['robots']['replace'] if x != None]
+            if len(replacements) != 0:
+                clean_tags.extend(replacements)
+            else:
+                clean_tags.append(tag)
+            tag_dict[tag] = full_tag
+            #print(full_tag)
+        else:
+            print(f'could not find {tag} in full tag dict, creating')
+            full_tag = classes.tag()
+            full_tag = full_tag.create_new_tag(tag)
+            clean_tags.append(tag)
+        
+    #print(clean_tags)
+    return(sorted(list(set(clean_tags))))  
 
 def stats_invalid() -> bool:
     'checks if stored stats may be innacurate'
@@ -337,6 +345,11 @@ def stats_changed() -> None:
 
 def get_setting(setting: str):
     return(read_json(f'{prefix}/config.json')[setting])
+
+def change_setting(setting: str, value):
+    file = read_json(f'{prefix}/config.json')
+    file[setting] = value
+    write_json(f'{prefix}/config.json', file)
 
 import classes
 global prefix, dataset_path
