@@ -45,7 +45,7 @@ danbooru_patterns = {
     'original source' : r'<li id="post-info-source">Source: .*? href="(.*?)">',
     'uploader id' : r'Uploader: <a class=".+?" data-user-id="(.+?)"',
     'uploader name' : r'Uploader: <a class=".+?" data-user-id=".+?" data-user-name="(.+?)"',
-    'score' : r'<span class="post-score[\S\s]+?>([\d])</a>',
+    'score' : r'<a rel="nofollow" href="/post_votes\?.+?>(.*?)</a>',
     'post title' : r'<h6(.*?)</h6>',
     'given tags' : r'<a class="search-tag" .+?>(.+?)</a>'
     }

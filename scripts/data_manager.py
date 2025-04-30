@@ -100,7 +100,7 @@ def create_all():
     create_folder(f'{prefix}/static/temp/media')
     create_folder(f'{dataset_path}')
 
-    create_file(f'{dataset_path}/master_list.json', {"description":"list of posts", "master":[], 'deleted':[]}, mode='ja')
+    create_file(f'{dataset_path}/master_list.json', classes.master_list.starter_dict, mode='ja')
     create_file(f'{dataset_path}/tag_dict.json', {"description":"dictionary of tags", "all" : {}}, mode='ja')
     #create_file(f'{prefix}/static/temp/cache.json', {"stored_search" : {"search" : "", "ids" : [], 'start_page' : 0}}, mode='jw')
     create_file(f'{dataset_path}/stats.json', classes.stats.start_dict, mode='j')
@@ -236,6 +236,7 @@ def update_post_tags(modifier_tag: str, update_details: dict):#add automatic rep
             tags = post_data[post].get('tags')
             assert type(tags) == list
             tags = tag_cleaner(tags)
+            post_data[post]["tags"] = tags
         
         write_json(log_location, post_data)
 

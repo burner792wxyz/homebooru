@@ -521,7 +521,7 @@ def import_post():
             data_manager.create_site(site)
         id_list = [int(x) for x in full_list[site]]
 
-        cleaned_tags = importer.tag_cleaner(tags)
+        cleaned_tags = data_manager.tag_cleaner(tags)
         post_id = max(id_list)+1
         print(id_list)
         mediadata_info = importer.get_mediadata_info(filepath)
@@ -650,6 +650,7 @@ def post_page(post_name):
                 if ((' ' in data[key]) and (type(data[key]) == str)):
                     data[key] = sorted(set(data[key].split(' ')))
                 post_data[key] = data[key]
+        post_data["tags"] = data_manager.tag_cleaner(post_data["tags"])
         full_data[post_id] = post_data
         data_manager.write_json(log_location, full_data)
         return flask.redirect(f'/posts/{post_name}', code=302)

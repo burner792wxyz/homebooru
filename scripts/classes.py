@@ -197,6 +197,9 @@ class tag:
             "category" : None,
             "robots" : self.robots
         }
+        all_tags = data_manager.read_json(tag.data_path)
+        all_tags['all'][str(tag_name)] = self.data_dictionary
+        data_manager.write_json(tag.data_path, all_tags)
         return self.data_dictionary
 
     def format_dict(self, tag_data: dict, strict = False):
