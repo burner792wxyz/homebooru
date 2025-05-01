@@ -737,7 +737,7 @@ def wiki_page(tag):
         data_manager.write_json(f'{dataset_path}/tag_dict.json', tag_dict)
         #update posts
         robots = tag_data['robots']
-        data_manager.update_post_tags(tag, robots)
+        data_manager.update_wiki(tag, robots)
 
         return flask.redirect(f'/wiki/{tag}', code=302)
 
@@ -763,11 +763,10 @@ if __name__ == '__main__':
     port = 1741
     hostname = socket.gethostname()
     ip_address = socket.gethostbyname(hostname)
-    print(f"Server started on {hostname} at {ip_address}:{port}")
 
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.ERROR)
 
     data_manager.create_all()
-    print(app.root_path)
+    print(f"Server started on {hostname} at {ip_address}:{port}")
     app.run(debug=True, host='0.0.0.0', port=port)

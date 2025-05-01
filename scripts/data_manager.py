@@ -101,7 +101,7 @@ def create_all():
     create_folder(f'{dataset_path}')
 
     create_file(f'{dataset_path}/master_list.json', classes.master_list.starter_dict, mode='ja')
-    create_file(f'{dataset_path}/tag_dict.json', {"description":"dictionary of tags", "all" : {}}, mode='ja')
+    create_file(f'{dataset_path}/tag_dict.json', classes.tag_dict.starter_dict, mode='ja')
     #create_file(f'{prefix}/static/temp/cache.json', {"stored_search" : {"search" : "", "ids" : [], 'start_page' : 0}}, mode='jw')
     create_file(f'{dataset_path}/stats.json', classes.stats.start_dict, mode='j')
 
@@ -112,7 +112,7 @@ def create_all():
 
 #delete things
 def delete_post(post_name: str) -> bool:
-    global prefix, dataset_path
+    global dataset_path
     stats_changed()
     post_site, post_id = post_name.split('_')
 
@@ -186,20 +186,23 @@ def recount_tagdict(tag_dict: dict) -> dict:
                 if tag_dict['all'][tag].get('count') != None:
                     #print(f'{tag_dict["all"][tag]} not found in {folder}')
                     tag_dict['all'][tag]['count'] = 0
-
+    if not 'all' in tag_dict.keys():
+        create_file(tag_dict_path, classes.tag_dict.starter_dict, 'wj')
     tag_dict['all'] = {dkey : value for dkey, value in sorted(tag_dict['all'].items(), key = lambda ele: ele[0])}
     write_json(tag_dict_path, tag_dict)
     return tag_dict
 
-def update_post_tags(modifier_tag: str, update_details: dict):#add automatic replacmet/alias & recount
+def update_wiki(modifier_tag: str, update_details: dict):#add automatic replacmet/alias & recount
     dataset_dir = f'{dataset_path}'
     tag_dict_path = f'{dataset_dir}/tag_dict.json'
 
     modifier_tag = modifier_tag.strip()
     modified_tags = [modifier_tag]
-    [[modified_tags.append(tag) for tag in value if tag != 'None'] for value in update_details.values()]
+    [[modified_tags.append(tag) for tag in value if (tag != None and tag != 'None')] for value in update_details.values()]
 
     #update tags
+    print(f'@203 || modified tags:{modified_tags}')
+    print(f'@204 || UPDATE DETAILS:{update_details}')
     tag_dict = read_json(tag_dict_path)
     for tag in modified_tags:
         if tag in tag_dict['all'].keys():
@@ -218,16 +221,20 @@ def update_post_tags(modifier_tag: str, update_details: dict):#add automatic rep
                 pass
         else:
             print(f'{tag} not found in dict')
-    
+            continue
+        tag_dict['all'][tag]['robots'] = {key : list(set(value)) for key, value in tag_dict['all'][tag]['robots'].items()}
+        
     if tag_dict != None:
         write_json(tag_dict_path, tag_dict)
+    
+    update_post_tags()
 
-    #update posts
-    tag_count = 0
-    for folder in os.listdir(dataset_dir):
-        if not os.path.isdir(f'{dataset_dir}\{folder}'):
+def update_post_tags():
+    global dataset_path
+    for folder in os.listdir(dataset_path):
+        if not os.path.isdir(f'{dataset_path}\{folder}'):
             continue
-        log_location = f'{dataset_dir}/{folder}/post_data.json'
+        log_location = f'{dataset_path}/{folder}/post_data.json'
         post_data = read_json(log_location) 
 
         for post in post_data:
@@ -239,6 +246,7 @@ def update_post_tags(modifier_tag: str, update_details: dict):#add automatic rep
             post_data[post]["tags"] = tags
         
         write_json(log_location, post_data)
+
 
 def update_stats():
     stat_path = f'{dataset_path}/stats.json'
@@ -318,13 +326,15 @@ def tag_cleaner(tag_list):
             tag_dict[tag] = full_tag
             #print(full_tag)
         else:
-            print(f'could not find {tag} in full tag dict, creating')
+            #print(f'could not find {tag} in full tag dict, creating')
             full_tag = classes.tag()
             full_tag = full_tag.create_new_tag(tag)
             clean_tags.append(tag)
         
-    #print(clean_tags)
+    clean_tags = [tag for tag in clean_tags if ((type(tag) == str) and (tag not in ['None', 'none']))]
+    print(clean_tags)
     return(sorted(list(set(clean_tags))))  
+
 
 def stats_invalid() -> bool:
     'checks if stored stats may be innacurate'
@@ -343,6 +353,7 @@ def stats_changed() -> None:
     stats['valid'] = False
     write_json(stat_path, stats)
     #print('stats are now invalid')
+
 
 def get_setting(setting: str):
     return(read_json(f'{prefix}/config.json')[setting])

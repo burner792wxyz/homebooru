@@ -9,3 +9,4 @@ pillow >= 11.1.0
 opencv-python >= 4.11.0.86
 numpy >= 2.2.3
 imageio >= 2.37.0
+# from data_manager

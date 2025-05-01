@@ -16,6 +16,9 @@ class errors:
         pass
 
 
+class tag_dict:
+    starter_dict = {"description":"dictionary of tags", "all" : {}}
+
 class search_methods:
     post_sort_methods = {
         "id" : "sort posts by id, highest first",
@@ -204,7 +207,7 @@ class tag:
 
     def format_dict(self, tag_data: dict, strict = False):
         checksum = hash(str(tag_data))
-        print(f'tag data: {tag_data}')
+        #print(f'@207 in tag class || tag data: {tag_data}')
 
         self.name = tag_data.get("name", self.invalid)
         self.count = tag_data.get("count", self.invalid)
