@@ -56,10 +56,10 @@
                             </div>
                         {% endif %}
                         <a name="post-link" class="post-preview" href="/posts/{{ post['name'] }}">
-                            <picture>
-                                <source srcset="{{ post['img_src'] }}">
+                            <div>
                                 <img class="resized-media {{ post['media_class'] }} preview" src="{{ post['img_src'] }}">
-                            </picture>
+                                <img class="rank-overlay" src="{{ post['rank_src'] }}">
+                            </div>
                         </a>
                     </article>
                 {% endfor %}

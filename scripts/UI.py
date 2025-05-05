@@ -24,6 +24,16 @@ def pagechange():
     os.mkdir(f'{app.static_folder}/temp/media')
 
 def build_post_html(passed_ids, all_post_data) -> tuple[list[str], list[str]]:
+    icon_prefix = f'{prefix}\\static\\icons'
+    rank_paths = {
+        'None' : 'undefined.png',
+        '0' : '0.png',
+        '1' : '1.png',
+        '2' : '2.png',
+        '3' : '3.png',
+        '4' : '4.png'
+    }
+
     tag_dict = {}
     post_html_list = []
 
@@ -38,12 +48,21 @@ def build_post_html(passed_ids, all_post_data) -> tuple[list[str], list[str]]:
                 tag_dict.update({tag : 1})
         filename = re.sub('\\'+'\\', '/', post_data["storage_path"])
         img_path = flask.url_for('preview', filename=filename, mode='preview')
+        rank_path = flask.url_for('preview', filename=f'{icon_prefix}\\{rank_paths[str(post_data["rank"])]}', mode='preview')
         if post_data['mediadata']['length'] > 0: 
             media_class = 'video'
         else: 
             media_class = 'image'
 
-        post_html = {"name": post_name,"id" : post_id, "site": post_site, 'tags': post_data["tags"], 'img_src' : img_path, 'media_class': media_class}
+        post_html = {
+            "name": post_name,
+            "id" : post_id, 
+            "site": post_site, 
+            'tags': post_data["tags"], 
+            'img_src' : img_path,
+            'rank_src' : rank_path,
+            'media_class': media_class
+            }
         post_html_list.append(post_html)
     
     tag_list = sorted(tag_dict, key= lambda i: tag_dict[i], reverse=True)[0:20]
@@ -299,6 +318,7 @@ app = flask.Flask(__name__, static_folder = f'{prefix}/static', template_folder 
 @app.route('/preview/<path:filename>')
 def preview(filename):
     mode = flask.request.args.get('mode', 'original')
+    rank = flask.request.args.get('rank', None)
     if mode == 'preview':
         filename = str(thumbnailizer.convert(filename))
 

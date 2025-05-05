@@ -332,7 +332,7 @@ def tag_cleaner(tag_list):
             clean_tags.append(tag)
         
     clean_tags = [tag for tag in clean_tags if ((type(tag) == str) and (tag not in ['None', 'none']))]
-    print(clean_tags)
+    #print(clean_tags)
     return(sorted(list(set(clean_tags))))  
 
 

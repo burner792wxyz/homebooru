@@ -60,7 +60,35 @@ def convert(input_file, frame_number=0):
         print(f"Error saving JPEG: {e}")
         return False
     
-''' 
+def add_overlay(input_file, data):
+    icon_prefix = f'{prefix}\\static\\icons'
+    rank_paths = {
+        'None' : 'undefined.png',
+        '0' : '0.png',
+        '1' : '1.png',
+        '2' : '2.png',
+        '3' : '3.png',
+        '4' : '4.png'
+    }
+    
+    img = Image.open(input_file).convert("RGBA")
+    path = f'{icon_prefix}\\{rank_paths[str(data["rank"])]}'
+    overlay = Image.open(path).convert("RGBA")
+    #resize overlay
+    '''
+    overlay_x = img.size[0]//4
+    overlay_y = round((overlay_x//overlay.size[0])*overlay.size[1])
+    new_size = (overlay_x, overlay_y)
+    print(new_size)
+    overlay.resize(new_size)
+    '''
+    #paste
+    img.paste(overlay, (0, 0), overlay)
+    img.save(input_file, "PNG")
+    img.close()
+    overlay.close()
+    
+'''     q   
 if len(sys.argv) < 2:
     print("Usage: python script.py <video_file> [frame_number]")
 else:
