@@ -1,7 +1,7 @@
 #!\venv\Scripts\python.exe
 r'''
 run in venv powershell by executing:
-    venv\Scripts\Activate.ps1
+    .venv\Scripts\Activate.ps1
     python source/scripts/UI.py
 '''
 import thumbnailizer, post_checker, importer, data_manager, classes #own scripts
