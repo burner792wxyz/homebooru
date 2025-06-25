@@ -125,7 +125,9 @@ class post:
             self.data_path = f'{os.path.dirname(os.path.dirname(self.storage_path))}/post_data.json'
             #print(f'self.data_path: {self.data_path}')
         else:
+            raise FileNotFoundError(f'file at {self.storage_path} is not readable, check permissions or file path')
             self.storage_path = "invalid path"
+            self.data_path = "invalid path"
         if ((strict) and (self.invalid in self.mediadata.values())):
             raise KeyError(self.mediadata)
         self.mediadata = {key: ((None if (self.invalid in value) else value) if isinstance(value, str) else value) for key, value in self.mediadata.items()}

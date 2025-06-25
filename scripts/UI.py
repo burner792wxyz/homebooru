@@ -5,7 +5,7 @@ run in venv powershell by executing:
     python source/scripts/UI.py
 '''
 import thumbnailizer, post_checker, importer, data_manager, classes #own scripts
-import flask, os, re, math, shutil, socket, time, tqdm, random, logging
+import flask, os, re, math, shutil, socket, time, tqdm, random, logging, subprocess
 
 
 posts_per_page = data_manager.get_setting('posts_per_page')
@@ -505,7 +505,10 @@ def import_post():
             #time.sleep(3)
             all_files = flask.request.files
             for key, file in all_files.items():
-                filename = file.filename
+                filename = str(file.filename)
+                if filename.strip() == "":
+                    print("filename error")
+                    return flask.redirect("/import")
                 filepath = f'{app.static_folder}/temp/{filename}'#this is right
                 file.save(filepath)
             
@@ -526,7 +529,17 @@ def import_post():
             return flask.render_template('importdefine.html', media = media, filepath=filepath)
         else:
             return flask.abort(404)
-    
+    if stage == 'url':
+        if method == 'POST':
+            url = flask.request.form.get('upload[source]', '').strip()
+            print(url)
+            if not url:
+                return flask.redirect("/import")
+            
+            return flask.render_template('importdefine.html', media="URL submitted: " + url, filepath=url)
+        else:
+            return flask.abort(404)
+
     if stage == 'submit':
         all_args = flask.request.args
         tags = all_args.get('tags', "").split(" ")
