@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<!-- > images are shown in a grid and the user picks one via a button under each, then submits when ready <!-->
+<head>
+    <title>HomeBooru client</title>
+
+    <link rel="stylesheet" href="/static/basic.css">
+</head>
+<body>
+    <form method="post" action="/import?stage=choose" id="form">
+    {% for i, image in images %}
+        <div class="imported-content flex centered">
+            {{ image | safe }}
+            <button type="button" name="image_{{i}}" value="{{ i }}" class="import-button standard_input" onclick="selectImage('{{i}}')">Select</button>
+        </div>
+    {% endfor %}
+        <input type="hidden" name="stage" value="choose">
+        <input id="image_form" type="hidden" name="image" value="{{ image }}">
+    </form>
+</body>
+<script>
+    function selectImage(button) {
+        const form = document.getElementById('form');
+        const image = document.getElementById('image_form');
+        image.value = button;
+        form.submit();
+    }
+</script>

@@ -5,7 +5,7 @@ run in venv powershell by executing:
     python source/scripts/UI.py
 '''
 import thumbnailizer, post_checker, importer, data_manager, classes #own scripts
-import flask, os, re, math, shutil, socket, time, tqdm, random, logging, subprocess
+import flask, os, re, math, socket, time, tqdm, random, logging, subprocess
 
 
 posts_per_page = data_manager.get_setting('posts_per_page')
@@ -20,8 +20,7 @@ immutables = ["storage_path", "score", "id", "mediadata", "uploader_id"]
 #helper functions
 
 def pagechange():
-    shutil.rmtree(f'{app.static_folder}/temp/media')
-    os.mkdir(f'{app.static_folder}/temp/media')
+    data_manager.clean_temp()
 
 def build_post_html(passed_ids, all_post_data) -> tuple[list[str], list[str]]:
     icon_prefix = f'{prefix}\\static\\icons'
@@ -398,7 +397,6 @@ def next(post_name):
     post = passed_ids[ind]
     return flask.redirect(f'/posts/{post}?parent_href={parent_href}')
     
-
 #viewable views
 @app.route('/')
 @app.route('/posts')
@@ -500,7 +498,7 @@ def import_post():
     if stage == 'start':
         if method == 'GET':
             return flask.render_template('importstart.html')
-    if stage == 'define':
+    elif stage == 'define':
         if method == 'POST':
             #time.sleep(3)
             all_files = flask.request.files
@@ -512,35 +510,54 @@ def import_post():
                 filepath = f'{app.static_folder}/temp/{filename}'#this is right
                 file.save(filepath)
             
-            media_info = importer.get_mediadata_info(filepath)
-            width = media_info['media_width']
-            height = media_info['media_height']
-            if width*height <=1:
-                image_dimensions = ""
-            else:
-                image_dimensions = f'width="{width}" height="{height}"'
-            img_path = flask.url_for('preview', filename=filepath, mode='preview')
-            media = f'''
-    <picture>   
-        <source srcset="{ img_path }">
-        <img class="resized-media centered image preview" src="{ img_path }" id="post-media" {image_dimensions} >
-    </picture>
-    '''
+            media = generate_media_html(filepath)
             return flask.render_template('importdefine.html', media = media, filepath=filepath)
         else:
             return flask.abort(404)
-    if stage == 'url':
+    elif stage == 'url':
         if method == 'POST':
             url = flask.request.form.get('upload[source]', '').strip()
-            print(url)
             if not url:
                 return flask.redirect("/import")
             
-            return flask.render_template('importdefine.html', media="URL submitted: " + url, filepath=url)
+            print(f'importing from url: {url}')
+            id_html, media_downloaded, media_objs = importer.get_media_from_url(url, f'{app.static_folder}/temp/media/imports/')
+            if media_downloaded == 0:
+                print(f'no media downloaded from {url}')
+                return flask.redirect('/import',code=404)
+            
+            filepaths = [x[1] for x in media_objs if x[1] != None]
+            medias = [generate_media_html(x) for x in filepaths]
+            if media_downloaded > 1:
+                print(f'multiple media downloaded from {url}')
+                return flask.render_template('importchoose.html', images = enumerate(medias))
+            
+            tags = importer.get_tags_from_url(url)
+            return flask.render_template('importdefine.html', media = medias[0], filepath = filepaths[0], tags = tags)
         else:
             return flask.abort(404)
+    elif stage == 'choose':#destination after choosing a media obj. make sure /temp/media/imports is deleted afterwards
+        all_args = flask.request.form.to_dict()
+        image = all_args.get('image', 0)
+        all_images = os.listdir(f'{app.static_folder}/temp/media/imports')
+        try:
+            filepath = f'{app.static_folder}/temp/media/imports/' + all_images[int(image)]
+            print(f'filepath: {filepath}')
+        except (ValueError, IndexError):
+            print(f'error choosing image: {image} not in {all_images}')
+            return flask.redirect('/import')
+        finally:
+            #delete all other files
+            for file in all_images:
+                if file != all_images[int(image)]:
+                    os.remove(f'{app.static_folder}/temp/media/imports/{file}')
+        
+        media = generate_media_html(filepath)
 
-    if stage == 'submit':
+        return flask.render_template('importdefine.html', media = media, filepath=filepath)
+    elif stage == 'submit':
+        #get post details
+        global dataset_path
         all_args = flask.request.args
         tags = all_args.get('tags', "").split(" ")
         original_source = all_args.get('source', "")
@@ -549,19 +566,20 @@ def import_post():
         filepath = all_args.get('filepath', "")
         site = all_args.get('site', "homebooru")
 
+        post = classes.post()
+
         full_list = data_manager.read_json(f'{dataset_path}\master_list.json')
         if not site in full_list.keys():
             data_manager.create_site(site)
         id_list = [int(x) for x in full_list[site]]
 
         cleaned_tags = data_manager.tag_cleaner(tags)
-        post_id = max(id_list)+1
-        print(id_list)
+        post_id = max(id_list)+2
         mediadata_info = importer.get_mediadata_info(filepath)
-        print(mediadata_info)
         new_filepath = f'{dataset_path}/homebooru/media/{post_id}.{mediadata_info["file_extenstion"]}'
+        data_manager.move_file(filepath, new_filepath)
         post_data = {#mutables first
-            'id': post_id,
+            'id': f'{site}_{post_id}',
             'tags': cleaned_tags,
             'title': title,
             'rating': rating,
@@ -573,20 +591,31 @@ def import_post():
             'storage_path': new_filepath
         }
         #add post info
-        tag_path = f'{dataset_path}/homebooru/post_data.json'
-        all_post_data = data_manager.read_json(tag_path)
-        all_post_data.update({str(post_id):post_data})
-        data_manager.write_json(tag_path, all_post_data)
-
-        #update master list
-        full_list["active"].append(f"homebooru_{post_id}")
-        full_list["homebooru"].append(post_id)
-        data_manager.write_json(f'{dataset_path}\master_list.json', full_list)
-        
-        #move post
-        shutil.move(filepath, new_filepath)
+        post.from_json(post_data)
+        data_manager.create_post(post)
 
         return flask.redirect(f'/posts/homebooru_{post_id}')
+
+def generate_media_html(filepath):
+    media_info = importer.get_mediadata_info(filepath)
+    if media_info is None:
+        print(f'error generating media html for {filepath}')
+        return ''
+    width = media_info['media_width']
+    height = media_info['media_height']
+    if width*height <=1:
+        image_dimensions = ""
+    else:
+        image_dimensions = f'width="{width}" height="{height}"'
+    img_path = flask.url_for('preview', filename=filepath, mode='preview')
+    media = f'''
+    <picture>   
+        <source srcset="{ img_path }">
+        <img class="resized-media centered image preview" src="{ img_path }" id="post-media" {image_dimensions} >
+    </picture>
+    '''
+
+    return media
 
 #mutable pages
 @app.route('/posts/<post_name>', methods=['GET', 'POST'])

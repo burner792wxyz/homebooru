@@ -1,5 +1,5 @@
 #!\venv\Scripts\python.exe
-import subprocess, re, requests, PIL.Image, tqdm, time, os, validators
+import re, requests, PIL.Image, tqdm, time, os, validators
 import ffmpeg
 import data_manager, classes
 
@@ -10,7 +10,7 @@ dataset_path = data_manager.read_json(f'{prefix}/config.json')["dataset_path"]
 
 blacklist = ['logo']
 
-image_extensions = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'svg']
+image_extensions = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'svg', 'gif']
 video_extensions = ['mp4', 'webm', 'avi', 'flv', 'mov', 'wmv', 'mkv', 'm4v']
 
 files_downloaded = []
@@ -123,6 +123,9 @@ def get_mediadata_info(filepath: str) -> dict | None:
 
 def call_api(url): 
     url = str(url)
+    if not validators.url(url):
+        print(f'Invalid URL: {url}')
+        return None
     #print(url)
     return requests.get(url, allow_redirects=True).text
 
@@ -139,17 +142,30 @@ def get_data(website_class, id_html, key):
         return(data)
 
 def get_media_from_url(post_url, path):
+        if post_url.split('.')[-1] in video_extensions or post_url.split('.')[-1] in image_extensions:
+            #if the post url is a direct link to a media file, download it directly
+            media_data = requests.get(post_url).content
+            file_extension = post_url.split('.')[-1].split('?')[0]
+            if file_extension not in image_extensions + video_extensions:
+                print(f'unknown file extension: {file_extension} for {post_url}')
+                return None, 0, []
+            filepath = f'{path}.{file_extension}'
+            with open(filepath, 'wb') as handler:
+                handler.write(media_data)
+                return None, 1, [(post_url, filepath)]
         id_html = call_api(post_url)
+        if id_html == None:
+            print(f'no html found for {post_url}')
+            return None, 0, []
         media_htmls = get_media_htmls(id_html)
         media_downloaded = 0
         media_objs = []
         for i, media in enumerate(media_htmls):
             if any([(x in media) for x in blacklist]): continue
-            media_src = re.search(r'src="(.*?)" ', media)
-            if media_src != None:
-                media_src = media_src.groups()[0]
-            else:
+            media_src = re.search(r'src="(.*?)"', media)
+            if media_src == None:
                 continue
+            media_src = media_src.groups()[0]
             if media_src.startswith("https://"):
                 pass
             elif media_src.startswith("http://"):
@@ -159,13 +175,32 @@ def get_media_from_url(post_url, path):
             if not validators.url(media_src):
                 continue
             media_data = requests.get(media_src).content
-            file_extension = media_src.split('.')[-1]
+            file_extension = media_src.split('.')[-1].split('?')[0]
+            if file_extension not in image_extensions + video_extensions:
+                print(f'unknown file extension: {file_extension} for {media_src}')
+                continue
             filepath = f'{path}_{i}.{file_extension}'
             with open(filepath, 'wb') as handler:
                 handler.write(media_data)
                 media_downloaded += 1
                 media_objs.append((media_src, filepath))
+        if media_downloaded == 0:
+            print(f'media htmls: {media_htmls}')
         return id_html, media_downloaded, media_objs
+def get_tags_from_url(url) -> list:#still experimental
+    html = call_api(url)
+    if html == None:
+        print(f'no html found for {url}')
+        return []
+    tags = re.findall(r'<(.*?tags.*?)>', html)
+    tags = [tag for tag in tags if tag.startswith('section')]#gets tags element
+    if len(tags) == 0:
+        print(f'no tags found in {url}')
+        return []
+    tags = re.findall(r'"(.*?)"', tags[0])#gets all tags in the element
+    tags = sorted(tags, key=lambda x: len(re.sub(r'[^ ]', '', x)) if (x != None) else 0, reverse=True)[0] #find the tag with the most spaces
+    return tags
+
 
 def download_post(post_id, website_class, site) -> bool:
     global page_dict, blacklist

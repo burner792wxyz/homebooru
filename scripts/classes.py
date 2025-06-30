@@ -92,11 +92,14 @@ class post:
         self.invalid = str(''.join([chr(random.randint(33, 125)) for x in range(0, 100)]))
 
     def from_json(self, post_data: dict, strict = False):
+        """
+        formats the post data from a json dictionary
+        """
         checksum = hash(str(post_data))
 
         if self.id == None:
             self.id = post_data.get("id", self.invalid)
-            self.site, self.num_id = self.id.split('_')
+        self.site, self.num_id = self.id.split('_')
         
         self.tags = post_data.get("tags", self.invalid)
         self.title = post_data.get("title", self.invalid)
@@ -158,6 +161,9 @@ class post:
         return self.data_dictionary
 
     def from_id(self, pid="self.id", post_json=None):
+        """
+        gets post data from existing post in dataset
+        """
         if pid != "self.id":
             self.id = pid
         assert type(self.id) == str

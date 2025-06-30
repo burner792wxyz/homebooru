@@ -1,7 +1,7 @@
 '''
 create folders and shii
 '''
-import os, orjson, asyncio, tqdm # type: ignore
+import os, orjson, shutil, tqdm # type: ignore
 from PIL import Image
 
 #json handling
@@ -65,8 +65,9 @@ def create_site(site: str):
     master_list.update({site : [0]})    
     write_json(f'{dataset_path}/master_list.json', master_list)
 
-def create_post(post):
-    '''adds post to: 
+def create_post(post) -> None:
+    '''
+    adds post (classes.post) to: 
     site/post_data.json, master_list.json, tag_dict.json'''
 
     stats_changed()
@@ -93,11 +94,10 @@ def create_post(post):
         full_list.update({'master' : post.id})  
     write_json(master_list_path, full_list)
 
-
 def create_all():
     global prefix, dataset_path
     print(f'called create_all in datamanager from {__name__} {__file__}')
-    create_folder(f'{prefix}/static/temp/media')
+    create_folder(f'{prefix}/static/temp/media/imports')
     create_folder(f'{dataset_path}')
 
     create_file(f'{dataset_path}/master_list.json', classes.master_list.starter_dict, mode='ja')
@@ -153,6 +153,24 @@ def delete_post(post_name: str) -> bool:
     return True
 
 #other things
+def move_file(source: str, destination: str) -> bool:
+    '''moves file from source to destination, returns True if successful'''
+    try:
+        os.makedirs(os.path.dirname(destination), exist_ok=True)
+        shutil.move(source, destination)
+        return True
+    except Exception as e:
+        print(f'Error moving file from {source} to {destination}: {e}')
+        return False
+
+def clean_temp():
+    global prefix
+    temp_path = f'{prefix}/static/temp/media/imports'
+    if os.path.isdir(temp_path):
+        shutil.rmtree(temp_path, ignore_errors=True)
+    create_folder(f'{prefix}/static/temp/media/imports')
+    
+
 def recount_tagdict(tag_dict: dict) -> dict:
     dataset_dir = f'{dataset_path}'
     tag_dict_path = f'{dataset_dir}/tag_dict.json'
