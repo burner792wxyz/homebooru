@@ -142,6 +142,9 @@ def get_data(website_class, id_html, key):
         return(data)
 
 def get_media_from_url(post_url, path):
+        '''
+        Downloads media from a post URL and returns the HTML of the post, number of media files downloaded, and a list of tuples containing the media source and file path.
+        '''
         if post_url.split('.')[-1] in video_extensions or post_url.split('.')[-1] in image_extensions:
             #if the post url is a direct link to a media file, download it directly
             media_data = requests.get(post_url).content
@@ -154,10 +157,14 @@ def get_media_from_url(post_url, path):
                 handler.write(media_data)
                 return None, 1, [(post_url, filepath)]
         id_html = call_api(post_url)
+        print(id_html)
         if id_html == None:
             print(f'no html found for {post_url}')
             return None, 0, []
         media_htmls = get_media_htmls(id_html)
+        if len(media_htmls) == 0:
+            print(f'no media found for {post_url}')
+            return id_html, 0, []
         media_downloaded = 0
         media_objs = []
         for i, media in enumerate(media_htmls):
@@ -200,7 +207,6 @@ def get_tags_from_url(url) -> list:#still experimental
     tags = re.findall(r'"(.*?)"', tags[0])#gets all tags in the element
     tags = sorted(tags, key=lambda x: len(re.sub(r'[^ ]', '', x)) if (x != None) else 0, reverse=True)[0] #find the tag with the most spaces
     return tags
-
 
 def download_post(post_id, website_class, site) -> bool:
     global page_dict, blacklist
