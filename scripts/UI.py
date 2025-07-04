@@ -5,8 +5,7 @@ run in venv powershell by executing:
     python source/scripts/UI.py
 '''
 import thumbnailizer, post_checker, importer, data_manager, classes #own scripts
-import flask, os, re, math, socket, time, tqdm, random, logging, subprocess
-
+import flask, os, re, math, socket, time, tqdm, random, logging
 
 posts_per_page = data_manager.get_setting('posts_per_page')
 
@@ -574,7 +573,7 @@ def import_post():
         id_list = [int(x) for x in full_list[site]]
 
         cleaned_tags = data_manager.tag_cleaner(tags)
-        post_id = max(id_list)+2
+        post_id = max(id_list)+1
         mediadata_info = importer.get_mediadata_info(filepath)
         new_filepath = f'{dataset_path}/homebooru/media/{post_id}.{mediadata_info["file_extenstion"]}'
         data_manager.move_file(filepath, new_filepath)

@@ -18,30 +18,31 @@
         </nav>
     </header>
     <form class="flex flex-col" id="new_upload" action="/import?stage=define" data-remote="true" method="post" enctype="multipart/form-data">
-        <div style="background-color: var(--form-input-background);">
-            <div class="input file optional upload_files hidden">
-                <label class="file optional" for="upload_files">Files</label>
-                <input id='clickform' multiple="multiple" class="file optional" type="file" name="upload[files][]">
-            </div>
-            
-            <div class="dropzone-container" id="drop_zone" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);" ondragleave="dragoffHandler(event)" onclick="clickHandler(event)">
-                Choose file or drag image here
-            </div>
-
-            <p class="text-center no-lower-space">— or —</p>
-            
-            <div class="input text-center med-padding">
-                <input class="text-center" placeholder="Paste URL here" type="text" name="upload[source]" id="upload_source" onchange="urlHandler(event)">
-            </div>
-            <div class="input hidden upload_referer_url">
-                <input class="hidden" type="hidden" name="upload[referer_url]" id="upload_referer_url">
-            </div>
-            <input type="submit" name="commit" value="Upload" class="button-primary text-center mx-auto hidden">
+      <div class="loader top" hidden="true" id="loader"></div>
+      <div style="background-color: var(--form-input-background);">
+        <div class="input file optional upload_files hidden">
+            <label class="file optional" for="upload_files">Files</label>
+            <input id='clickform' multiple="multiple" class="file optional" type="file" name="upload[files][]">
         </div>
+        
+        <div class="dropzone-container" id="drop_zone" ondrop="dropHandler(event);" ondragover="dragOverHandler(event);" ondragleave="dragoffHandler(event)" onclick="clickHandler(event)">
+            Choose file or drag image here
+        </div>
+        <p class="text-center no-lower-space">— or —</p>
+        
+        <div class="input text-center med-padding">
+            <input class="text-center" placeholder="Paste URL here" type="text" name="upload[source]" id="upload_source" onchange="urlHandler(event)">
+        </div>
+        <div class="input hidden upload_referer_url">
+            <input class="hidden" type="hidden" name="upload[referer_url]" id="upload_referer_url">
+        </div>
+        <input type="submit" name="commit" value="Upload" class="button-primary text-center mx-auto hidden">
+      </div>
     </form>
 </body>
 <script type="text/javascript">
     function urlHandler(ev) {
+      document.getElementById("loader").hidden = false;
       ev.preventDefault();
       const form = document.getElementById("new_upload");
       form.action = "/import?stage=url";
@@ -49,6 +50,7 @@
     }
 
     function clickHandler(ev) {
+      document.getElementById("loader").hidden = false;
       const input_element = document.getElementById('clickform');
       input_element.click();
       input_element.addEventListener("change", clickfile, false);
@@ -76,6 +78,7 @@
     }
 
     function dropHandler(ev) {
+      document.getElementById("loader").hidden = false;
       console.log('File(s) dropped');
         
       // Prevent default behavior (Prevent file from being opened)

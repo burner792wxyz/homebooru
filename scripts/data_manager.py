@@ -29,12 +29,17 @@ def write_json(filepath: str, obj: dict) -> None:
 
 #create things
 def create_file(filepath: str, data: bytes, mode = 'a' ) -> bool:
-    '''mode: w = overwrite, j = json. multiple modes can be used together
+    '''mode: w = overwrite, j = json a=append, i=ignore if exists. multiple modes can be used together,
     
     '''
     path, filename = os.path.split(filepath)
-    if 'w' in mode and os.path.isfile(filepath):
-        os.remove(filepath)
+    if os.path.isfile(filepath):
+        if 'i' in mode:
+            print(f'file: {filepath} already exists, ignoring')
+            return False
+        if 'w' in mode:
+            print(f'file: {filepath} already exists, overwriting')
+            os.remove(filepath)
     if filename not in os.listdir(path):
         print(f'file: {filepath} not found, creating')
         if 'j' in mode:
@@ -55,6 +60,9 @@ def create_folder(filepath: str) -> bool:
 
 def create_site(site: str):
     global dataset_path
+    if os.path.isdir(f'{dataset_path}/{site}'):
+        print(f'site {site} already exists, skipping creation')
+        return
     site_path = f'{dataset_path}/{site}'
     stats_changed()
     create_folder(f'{site_path}/media')
@@ -100,9 +108,8 @@ def create_all():
     create_folder(f'{prefix}/static/temp/media/imports')
     create_folder(f'{dataset_path}')
 
-    create_file(f'{dataset_path}/master_list.json', classes.master_list.starter_dict, mode='ja')
-    create_file(f'{dataset_path}/tag_dict.json', classes.tag_dict.starter_dict, mode='ja')
-    #create_file(f'{prefix}/static/temp/cache.json', {"stored_search" : {"search" : "", "ids" : [], 'start_page' : 0}}, mode='jw')
+    create_file(f'{dataset_path}/master_list.json', classes.master_list.starter_dict, mode='ji')
+    create_file(f'{dataset_path}/tag_dict.json', classes.tag_dict.starter_dict, mode='ji')
     create_file(f'{dataset_path}/stats.json', classes.stats.start_dict, mode='j')
 
     create_site('homebooru')
