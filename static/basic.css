@@ -200,6 +200,7 @@ menu{
     }
     .large-selector{
         width: 500px !important;
+        height: 100px;
         justify-content: space-between;
     }
 

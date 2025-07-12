@@ -521,7 +521,7 @@ def import_post():
             
             print(f'importing from url: {url}')
             path = os.path.normpath(f'{app.static_folder}/temp/media/imports')
-            id_html, media_downloaded, media_objs = importer.get_media_from_url(url, path)
+            id_html, media_downloaded, media_objs = importer.get_media_from_url(url, path+"/")
             if media_downloaded == 0:
                 print(f'no media downloaded from {url}')
                 return flask.redirect('/import',code=404)
@@ -541,6 +541,8 @@ def import_post():
     elif stage == 'choose':#destination after choosing a media obj. make sure /temp/media/imports is deleted afterwards
         all_args = flask.request.form.to_dict()
         image = all_args.get('image', 0)
+        tags = all_args.get('tags', "").split(" ")
+        url = all_args.get('source', "")
         all_images = os.listdir(f'{app.static_folder}/temp/media/imports')
         try:
             filepath = f'{app.static_folder}/temp/media/imports/' + all_images[int(image)]
@@ -556,7 +558,7 @@ def import_post():
         
         media = generate_media_html(filepath)
 
-        return flask.render_template('importdefine.html', media = media, filepath=filepath)
+        return flask.render_template('importdefine.html', media = media, filepath=filepath, tags = ' '.join(tags), source=url)
     elif stage == 'submit':
         #get post details
         global dataset_path
@@ -693,7 +695,7 @@ def post_page(post_name):
     if edit == 1:
         catagories = [f'''
             <label for="{catagory}">{catagory}</label> <br> 
-            <textarea class="tag-textarea" name="{catagory}">{" ".join(post_data[catagory]) if is_iterable(post_data[catagory]) else str(post_data[catagory])}</textarea>'''
+            <textarea class="tag-textarea selector {"large-selector" if catagory == "tags" else ""}" name="{catagory}">{" ".join(post_data[catagory]) if is_iterable(post_data[catagory]) else str(post_data[catagory])}</textarea>'''
         for catagory in post_data if catagory not in immutables]
 
         ending += f'''

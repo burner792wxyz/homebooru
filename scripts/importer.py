@@ -158,7 +158,7 @@ def get_media_from_url(post_url, path, always_use_yt_dlp=True):
             filepath = f'{path}.{file_extension}'
             with open(filepath, 'wb') as handler:
                 handler.write(media_data)
-                media_info = get_mediadata_info(filepath, original_source=media_src)
+                media_info = get_mediadata_info(filepath, original_source=post_url)
             return None, 1, [{"source" : post_url, "filepath" : filepath, "media_data" : media_info}]
         id_html = call_api(post_url)
         if id_html == None:
