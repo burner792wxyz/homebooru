@@ -9,7 +9,7 @@ cwd = os.path.abspath(os.getcwd())
 prefix = f'{cwd}/source'
 dataset_path = data_manager.read_json(f'{prefix}/config.json')["dataset_path"]
 
-blacklist = ['logo']
+blacklist = ['logo', 'icon', '.js']
 
 image_extensions = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'svg', 'gif']
 video_extensions = ['mp4', 'webm', 'avi', 'flv', 'mov', 'wmv', 'mkv', 'm4v']
@@ -72,7 +72,7 @@ realbooru_patterns = {
 }
 
 
-def get_mediadata_info(filepath: str) -> dict | None:
+def get_mediadata_info(filepath: str, original_source=None) -> dict | None:
     file_extension = filepath.split('.')[-1]
     try:
         if file_extension in image_extensions:
@@ -118,7 +118,8 @@ def get_mediadata_info(filepath: str) -> dict | None:
     'media_height': media_height,
     'frame_rate': frame_rate,
     'length': length,
-    'file_extenstion' : file_extension
+    'file_extenstion' : file_extension,
+    'original_source': original_source
     }
     return mediadata
 
@@ -142,7 +143,7 @@ def get_data(website_class, id_html, key):
             data = data.group(1)
         return(data)
 
-def get_media_from_url(post_url, path,always_use_yt_dlp=True):
+def get_media_from_url(post_url, path, always_use_yt_dlp=True):
         '''
         Downloads media from a post URL and returns the HTML of the post, number of media files downloaded, and a list of tuples containing the media source and file path.
         '''
@@ -157,7 +158,8 @@ def get_media_from_url(post_url, path,always_use_yt_dlp=True):
             filepath = f'{path}.{file_extension}'
             with open(filepath, 'wb') as handler:
                 handler.write(media_data)
-                return None, 1, [(post_url, filepath)]
+                media_info = get_mediadata_info(filepath, original_source=media_src)
+            return None, 1, [{"source" : post_url, "filepath" : filepath, "media_data" : media_info}]
         id_html = call_api(post_url)
         if id_html == None:
             print(f'no html found for {post_url}')
@@ -169,7 +171,9 @@ def get_media_from_url(post_url, path,always_use_yt_dlp=True):
             print(f'no media found for {post_url}')
         else:
             for i, media in enumerate(media_htmls):
-                if any([(x in media) for x in blacklist]): continue
+                if any([x in media for x in blacklist]):
+                    print(f'skipping media with blacklisted content: {media}')
+                    continue
                 media_src = re.search(r'src="(.*?)"', media)
                 if media_src == None:
                     continue
@@ -182,38 +186,45 @@ def get_media_from_url(post_url, path,always_use_yt_dlp=True):
                     media_src = "http:" + media_src
                 if not validators.url(media_src):
                     continue
-                media_data = requests.get(media_src).content
-                file_extension = media_src.split('.')[-1].split('?')[0]
+                raw_media_data = requests.get(media_src).content
+                file_extension = media_src.split('?')[0].split('.')[-1]
                 if file_extension not in image_extensions + video_extensions:
                     print(f'unknown file extension: {file_extension} for {media_src}')
                     continue
                 filepath = f'{path}_{i}.{file_extension}'
                 with open(filepath, 'wb') as handler:
-                    handler.write(media_data)
+                    handler.write(raw_media_data)
+                    media_info = get_mediadata_info(filepath, original_source=media_src)
                     media_downloaded += 1
-                    media_objs.append((media_src, filepath))
+                    media_objs.append({"source" : media_src, "filepath" : filepath, "media_data" : media_info})
         if media_downloaded == 0 or always_use_yt_dlp:
             #try using yt-dlp to download media
-            print(f'no media found for {post_url}, trying yt-dlp')
+            print(f'trying yt-dlp')
             try:
                 ydl_opts = {
                     'outtmpl': f'{path}_%(id)s.%(ext)s',
                     'format': 'bestvideo+bestaudio/best',
                     'noplaylist': True,
                     'quiet': True,
+                    'socket_timeout': 30,
                 }
                 with yt.YoutubeDL(ydl_opts) as ydl:
                     info_dict = ydl.extract_info(post_url, download=True)
                     media_src = info_dict.get('url', None)
                     file_extension = info_dict.get('ext', None)
                     if media_src and file_extension:
-                        filepath = f'{path}.{file_extension}'
-                        os.rename(f'{path}_{info_dict["id"]}.{file_extension}', filepath)
+                        filepath = f'{path}_{media_downloaded+1}.{file_extension}'
+                        yt_dlp_filename = f'{path}_{info_dict["id"]}.{file_extension}'
+                        os.rename(yt_dlp_filename, filepath)
                         media_downloaded += 1
-                        media_objs.append((media_src, filepath))
+                        media_objs.append({"source" : media_src, "filepath" : filepath, "media_data" : info_dict})
             except Exception as e:
                 print(f'Error downloading media with yt-dlp: {e}')
-                return id_html, 0, []
+                #print(f'html: {id_html}')
+        if media_downloaded == 0:
+            print(f'no media downloaded for {post_url}')
+            print(f'html: {id_html}')
+            return id_html, 0, []
         return id_html, media_downloaded, media_objs
 def get_tags_from_url(url) -> list:#still experimental
     html = call_api(url)

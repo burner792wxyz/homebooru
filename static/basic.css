@@ -158,6 +158,11 @@ menu{
     padding: 0em 1em;
 }
 
+.imported-text{
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
 .flex{
     display: flex;
 }
@@ -178,7 +183,7 @@ menu{
     width: fit-content;
 }
 
-    .selector{
+    .selector{ /*what does selector mean? */
         justify-items: left;
         margin-top: 0.25em;
         display: flex;
@@ -256,6 +261,7 @@ menu{
 picture {
     display: block;
     max-width: fit-content;
+    padding: 5px;
 }
 
 .rank-bar {
@@ -332,4 +338,17 @@ picture {
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.list-element {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    max-width: 66%;
+}
+
+.choose {
+    display: flex; 
+    flex-direction: column; 
+    align-items: center;
+    overflow: hidden;
 }

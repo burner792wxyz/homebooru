@@ -510,7 +510,7 @@ def import_post():
                 file.save(filepath)
             
             media = generate_media_html(filepath)
-            return flask.render_template('importdefine.html', media = media, filepath=filepath)
+            return flask.render_template('importdefine.html', media = media, filepath = filepath, source = "")
         else:
             return flask.abort(404)
     elif stage == 'url':
@@ -520,19 +520,22 @@ def import_post():
                 return flask.redirect("/import")
             
             print(f'importing from url: {url}')
-            id_html, media_downloaded, media_objs = importer.get_media_from_url(url, f'{app.static_folder}/temp/media/imports/')
+            path = os.path.normpath(f'{app.static_folder}/temp/media/imports')
+            id_html, media_downloaded, media_objs = importer.get_media_from_url(url, path)
             if media_downloaded == 0:
                 print(f'no media downloaded from {url}')
                 return flask.redirect('/import',code=404)
             
-            filepaths = [x[1] for x in media_objs if x[1] != None]
+            filepaths = [x["filepath"] for x in media_objs if x["filepath"] != None]
             medias = [generate_media_html(x) for x in filepaths]
+            tags = importer.get_tags_from_url(url)
+            labeled_media = [(i, html, media_objs[i]["source"], media_objs[i]["media_data"]) for i, html in enumerate(medias)]
             if media_downloaded > 1:
                 print(f'multiple media downloaded from {url}')
-                return flask.render_template('importchoose.html', images = enumerate(medias))
+                return flask.render_template('importchoose.html', images = labeled_media, tags = tags, source=url)
             
-            tags = importer.get_tags_from_url(url)
-            return flask.render_template('importdefine.html', media = medias[0], filepath = filepaths[0], tags = tags)
+            
+            return flask.render_template('importdefine.html', media = medias[0], filepath = filepaths[0], tags = tags, source=url)
         else:
             return flask.abort(404)
     elif stage == 'choose':#destination after choosing a media obj. make sure /temp/media/imports is deleted afterwards
@@ -574,7 +577,7 @@ def import_post():
 
         cleaned_tags = data_manager.tag_cleaner(tags)
         post_id = max(id_list)+1
-        mediadata_info = importer.get_mediadata_info(filepath)
+        mediadata_info = importer.get_mediadata_info(filepath, original_source=original_source)
         new_filepath = f'{dataset_path}/homebooru/media/{post_id}.{mediadata_info["file_extenstion"]}'
         data_manager.move_file(filepath, new_filepath)
         post_data = {#mutables first
@@ -606,7 +609,8 @@ def generate_media_html(filepath):
         image_dimensions = ""
     else:
         image_dimensions = f'width="{width}" height="{height}"'
-    img_path = flask.url_for('preview', filename=filepath, mode='preview')
+    filename = re.sub('\\'+'\\', '/', filepath)
+    img_path = flask.url_for('preview', filename = filename, mode = 'preview')
     media = f'''
     <picture>   
         <source srcset="{ img_path }">

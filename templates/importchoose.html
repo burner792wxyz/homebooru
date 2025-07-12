@@ -6,14 +6,21 @@
     <link rel="stylesheet" href="/static/basic.css">
 </head>
 <body>
-    <form method="post" action="/import?stage=choose" id="form">
-    {% for i, image in images %}
-        <div class="imported-content flex centered">
-            {{ image | safe }}
-            <button type="button" name="image_{{i}}" value="{{ i }}" class="import-button standard_input" onclick="selectImage('{{i}}')">Select</button>
-        </div>
-    {% endfor %}
+    <form method="post" class="choose flex-col" action="/import?stage=choose" id="form">
+        {% for i, html, source, data in images %}
+            <div class="imported-content flex centered list-element">
+                {{ html | safe }}
+                <p class="imported-content imported-text">
+                    Image {{ i }} <br>
+                    Source: {{ source }}<br>
+                    {{ data }} <br>
+                </p>
+                <button type="button" name="image_{{i}}" value="{{ i }}" class="import-button standard_input" onclick="selectImage('{{i}}')">Select</button>
+            </div>
+        {% endfor %}
         <input type="hidden" name="stage" value="choose">
+        <input type="hidden" name="source" value="{{ source }}">
+        <input type="hidden" name="tags" value="{{ tags }}">
         <input id="image_form" type="hidden" name="image" value="{{ image }}">
     </form>
 </body>
