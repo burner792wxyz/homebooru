@@ -105,6 +105,7 @@ def create_post(post) -> None:
 def create_all():
     global prefix, dataset_path
     print(f'called create_all in datamanager from {__name__} {__file__}')
+    clean_temp()
     create_folder(f'{prefix}/static/temp/media/imports')
     create_folder(f'{dataset_path}')
 
@@ -170,13 +171,26 @@ def move_file(source: str, destination: str) -> bool:
         print(f'Error moving file from {source} to {destination}: {e}')
         return False
 
-def clean_temp():
+def clean_temp(whitelist: list = None) -> None:
+    """cleans the temp folder, removing files not in the whitelist, whitelist filepaths should be absolute"""
     global prefix
-    temp_path = f'{prefix}/static/temp/media/imports'
+    temp_path = f'{prefix}/static/temp' 
     if os.path.isdir(temp_path):
-        shutil.rmtree(temp_path, ignore_errors=True)
-    create_folder(f'{prefix}/static/temp/media/imports')
-    
+        if whitelist == None:
+            shutil.rmtree(temp_path, ignore_errors=True)
+            create_folder(f'{prefix}/static/temp/media/imports')
+        else:
+            whitelist = [os.path.normpath(path) for path in whitelist]
+            for dirpath, dirnames, filenames in os.walk(temp_path):
+                for filename in filenames:
+                    filepath = os.path.normpath(os.path.join(dirpath, filename))
+                    if ((os.path.isfile(filepath)) and (filepath not in whitelist)):
+                        try:
+                            os.remove(filepath)
+                        except Exception as e:
+                            print(f'Error removing file {filepath}: {e}')
+    else:
+        create_folder(f'{prefix}/static/temp/media/imports')
 
 def recount_tagdict(tag_dict: dict) -> dict:
     dataset_dir = f'{dataset_path}'

@@ -7,21 +7,32 @@
 </head>
 <body>
     <form method="post" class="choose flex-col" action="/import?stage=choose" id="form">
-        {% for i, html, source, data in images %}
+        {% for i, html, source, data, filename in images %}
             <div class="imported-content flex centered list-element">
                 {{ html | safe }}
                 <p class="imported-content imported-text">
-                    Image {{ i }} <br>
+                    Filename: {{ filename }} <br>
                     Source: {{ source }}<br>
-                    {{ data }} <br>
+                    {% if data %}
+                        Data: {% for key, value in data %}
+                            {% if key == "height" or  key == "width" or key == "media_height" or  key == "media_width"%}
+                                {{ key }}: {{ value }}px
+                            {% elif key == "length" or key == "duration" %}
+                                {{ key }}: {{ value }}s
+                            {% endif %}
+                        {% endfor %}
+                        <br>
+                    {% else %}
+                        Data: No additional data available.<br>
+                    {% endif %}
                 </p>
-                <button type="button" name="image_{{i}}" value="{{ i }}" class="import-button standard_input" onclick="selectImage('{{i}}')">Select</button>
+                <button type="button" name="image_{{ filename }}" value="{{ filename }}" class="import-button standard_input" onclick="selectImage('{{ filename }}')">Select</button>
             </div>
         {% endfor %}
         <input type="hidden" name="stage" value="choose">
         <input type="hidden" name="source" value="{{ source }}">
         <input type="hidden" name="tags" value="{{ tags }}">
-        <input id="image_form" type="hidden" name="image" value="{{ image }}">
+        <input id="image_form" type="hidden" name="image" value="{{ filename }}">
     </form>
 </body>
 <script>

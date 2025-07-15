@@ -18,8 +18,10 @@ media_keys = ['media_link', 'media_width', 'media_height', 'frame_rate', 'length
 immutables = ["storage_path", "score", "id", "mediadata", "uploader_id"]
 #helper functions
 
-def pagechange():
+def pagechange() -> list:
     data_manager.clean_temp()
+    messages = flask.get_flashed_messages(with_categories=True)
+    return messages if messages else []
 
 def build_post_html(passed_ids, all_post_data) -> tuple[list[str], list[str]]:
     icon_prefix = f'{prefix}\\static\\icons'
@@ -328,8 +330,8 @@ def preview(filename):
 @app.route('/update_stats')
 def update_stats():
     data_manager.update_stats()
-    return flask.redirect('/settings', 307)
-    
+    return flask.redirect('/settings')
+
 @app.route('/favicon.ico')
 def favicon():
     return flask.send_file(f'{prefix}/static/favicon.ico')
@@ -341,15 +343,18 @@ def bulk_edit():
     all_args = flask.request.form.to_dict()
     data = all_args.get('data')
     
-    if type(data) != str:
+    try:
+        data = data.split('&')
+        data = {entry.split(':')[0] : entry.split(':')[1] for entry in data}
+        deletes = data.get('delete')
+        if deletes != None:
+            deletes = deletes.strip('[').strip(']')
+            deletes = [x.strip() for x in deletes.split(',')]
+        assert '' not in deletes
+    except Exception as e:
+        print(f'error parsing bulk edit data: {e}')
+        flask.flash('Error parsing bulk edit data', 'error')
         return flask.redirect(r'/')
-    data = data.split('&')
-    #[print(x) for x in data]
-    data = {entry.split(':')[0] : entry.split(':')[1] for entry in data}
-    deletes = data.get('delete')
-    if deletes != None:
-        deletes = deletes.strip('[').strip(']')
-        deletes = [x.strip() for x in deletes.split(',')]
 
     #delete selected
     for post in deletes:
@@ -401,7 +406,7 @@ def next(post_name):
 @app.route('/posts')
 def home():
     global posts_per_page, dataset_path
-    pagechange()
+    messages = pagechange()
     all_args = flask.request.args.to_dict()
     page = int(all_args.get('page', 0))
     edit = all_args.get('edit', 0)
@@ -435,7 +440,7 @@ def home():
     search = ' '.join([f'{" ".join(value)}' if key == "tags" else f'{key}:{" ".join(value)}' for key, value in search.items()])
 
     all_post_data = None
-    return flask.render_template('home.html', tags = tag_htmls, posts = post_html_list, pageinator = pageinator_obj, search=search, edit=(int(edit)==1))#
+    return flask.render_template('home.html', tags = tag_htmls, posts = post_html_list, pageinator = pageinator_obj, search=search, edit=(int(edit)==1), messages = messages)#
 
 @app.route('/wiki')
 @app.route('/wiki/')
@@ -504,7 +509,7 @@ def import_post():
             for key, file in all_files.items():
                 filename = str(file.filename)
                 if filename.strip() == "":
-                    print("filename error")
+                    flask.flash('No file selected', 'error')
                     return flask.redirect("/import")
                 filepath = f'{app.static_folder}/temp/{filename}'#this is right
                 file.save(filepath)
@@ -517,23 +522,29 @@ def import_post():
         if method == 'POST':
             url = flask.request.form.get('upload[source]', '').strip()
             if not url:
+                flask.flash('No URL provided', 'error')
                 return flask.redirect("/import")
             
             print(f'importing from url: {url}')
             path = os.path.normpath(f'{app.static_folder}/temp/media/imports')
-            id_html, media_downloaded, media_objs = importer.get_media_from_url(url, path+"/")
+            id_html, media_downloaded, media_objs = importer.get_media_from_url(url, path+"\\")
             if media_downloaded == 0:
-                print(f'no media downloaded from {url}')
-                return flask.redirect('/import',code=404)
-            
+                flask.flash('No media found at the provided URL', 'error')
+                return flask.redirect('/import')
+            cleaned_media_objs = "\n".join([str(x) for x in media_objs])
+            print(f'media downloaded from {url}: {cleaned_media_objs}')
             filepaths = [x["filepath"] for x in media_objs if x["filepath"] != None]
             medias = [generate_media_html(x) for x in filepaths]
             tags = importer.get_tags_from_url(url)
-            labeled_media = [(i, html, media_objs[i]["source"], media_objs[i]["media_data"]) for i, html in enumerate(medias)]
+            labeled_media = [(i,
+                            html,
+                            media_objs[i]["source"],
+                            media_objs[i]["media_data"].items() if media_objs[i]["media_data"] else None,
+                            os.path.basename(media_objs[i]["filepath"])
+                            ) for i, html in enumerate(medias)]
             if media_downloaded > 1:
                 print(f'multiple media downloaded from {url}')
                 return flask.render_template('importchoose.html', images = labeled_media, tags = tags, source=url)
-            
             
             return flask.render_template('importdefine.html', media = medias[0], filepath = filepaths[0], tags = tags, source=url)
         else:
@@ -545,16 +556,14 @@ def import_post():
         url = all_args.get('source', "")
         all_images = os.listdir(f'{app.static_folder}/temp/media/imports')
         try:
-            filepath = f'{app.static_folder}/temp/media/imports/' + all_images[int(image)]
-            print(f'filepath: {filepath}')
+            filepath = f'{app.static_folder}/temp/media/imports/' + image
+            os.chmod(filepath, 0o644)  # make sure the file is readable
+            data_manager.clean_temp(whitelist = [filepath])
         except (ValueError, IndexError):
+            flask.flash(f'Error: Invalid image selection {image}. Please choose a valid image.', 'error')
             print(f'error choosing image: {image} not in {all_images}')
+            data_manager.clean_temp()
             return flask.redirect('/import')
-        finally:
-            #delete all other files
-            for file in all_images:
-                if file != all_images[int(image)]:
-                    os.remove(f'{app.static_folder}/temp/media/imports/{file}')
         
         media = generate_media_html(filepath)
 
@@ -645,7 +654,7 @@ def post_page(post_name):
         
         print('end parent href:', parent_href)
         data_manager.delete_post(post_name)
-        return flask.redirect(parent_href, code=302)
+        return flask.redirect(parent_href)
 
     if rank != None:
         rank = int(rank)
@@ -836,4 +845,5 @@ if __name__ == '__main__':
 
     data_manager.create_all()
     print(f"Server started on {hostname} at {ip_address}:{port}")
+    app.secret_key = 'supersecretkey'
     app.run(debug=True, host='0.0.0.0', port=port)

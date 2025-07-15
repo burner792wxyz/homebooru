@@ -5,9 +5,23 @@
     <link rel="stylesheet" href="/static/basic.css">
 </head>
 <body>
+    {% if messages %}
+        <div id="messages" class="error-overlay flex-col">
+            {% for category, message in messages %}
+                    {% if category == 'error' %}
+                        <div class="error-message">
+                            {{message}}
+                        </div>
+
+                    {% elif category == 'info' %}
+                        <svg viewBox="0 0 512 512"><use fill="currentColor" href="static/icons-c18cad4efd0bb958da81.svg#info-circle"></use></svg>
+                    {% endif %}
+            {% endfor %}
+        <button id="close-messages" onclick="hide_messages()">close-messages</button>
+        </div>
+    {% endif %}
     <header>  
         <h1 class="title">HomeBooru</h1>
-    
         <nav>
             <menu>
                 <a href="/" class="nav-link">Home</a>
@@ -74,6 +88,14 @@
 
 <script src="/static/basic-scripts.js"></script>
 <script>
+    function hide_messages() {
+        console.log("Hiding messages");
+        const messages = document.getElementById("messages");
+        if (messages) {
+            messages.style.display = "none";
+        }
+    }
+
     const post_array = document.getElementsByName("post-link");
     const parentlink = add_parentlink(post_array);
 

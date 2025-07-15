@@ -11,7 +11,7 @@ prefix = f'{cwd}/source'
 def convert(input_file, frame_number=0):
     global prefix
 
-    output_file = f"{prefix}/static/temp/media/{input_file.split('.')[0].split('/')[-1]}.jpeg"
+    output_file = f"{prefix}/static/temp/media/thumbnail_{input_file.split('.')[0].split('/')[-1]}.jpeg"
     if input_file.lower().split('.')[-1] in image_extenstions:
         return input_file
     if not os.path.exists(input_file):
@@ -74,25 +74,7 @@ def add_overlay(input_file, data):
     img = Image.open(input_file).convert("RGBA")
     path = f'{icon_prefix}\\{rank_paths[str(data["rank"])]}'
     overlay = Image.open(path).convert("RGBA")
-    #resize overlay
-    '''
-    overlay_x = img.size[0]//4
-    overlay_y = round((overlay_x//overlay.size[0])*overlay.size[1])
-    new_size = (overlay_x, overlay_y)
-    print(new_size)
-    overlay.resize(new_size)
-    '''
-    #paste
     img.paste(overlay, (0, 0), overlay)
     img.save(input_file, "PNG")
     img.close()
     overlay.close()
-    
-'''     q   
-if len(sys.argv) < 2:
-    print("Usage: python script.py <video_file> [frame_number]")
-else:
-    file_path = sys.argv[1]
-    frame_num = int(sys.argv[2]) if len(sys.argv) > 2 else 0
-    convert(file_path, frame_num)
-'''   

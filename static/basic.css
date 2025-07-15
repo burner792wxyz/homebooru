@@ -214,7 +214,7 @@ menu{
 }
 
 .flex-col{
-    display: flex !important;
+    display: flex ;
     justify-content: center;
     align-items: center;
     flex-direction: column;
@@ -352,4 +352,25 @@ picture {
     flex-direction: column; 
     align-items: center;
     overflow: hidden;
+}
+
+.error-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Ensures the overlay is on top */
+}
+
+.error-message {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  text-align: center;
 }

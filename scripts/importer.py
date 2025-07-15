@@ -9,7 +9,9 @@ cwd = os.path.abspath(os.getcwd())
 prefix = f'{cwd}/source'
 dataset_path = data_manager.read_json(f'{prefix}/config.json')["dataset_path"]
 
-blacklist = ['logo', 'icon', '.js']
+blacklist = ['logo', 'icon', '.js', 'avatar',
+            'preview', 'thumbnail', 'watermark',
+            'banner', 'profile', '.svg']
 
 image_extensions = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'svg', 'gif']
 video_extensions = ['mp4', 'webm', 'avi', 'flv', 'mov', 'wmv', 'mkv', 'm4v']
@@ -131,7 +133,8 @@ def call_api(url):
     #print(url)
     return requests.get(url, allow_redirects=True).text
 
-def get_media_htmls(html: str) -> list:
+def get_media_htmls(html: str) -> list[str]:
+    """Extracts inner HTML of media elements from the provided HTML string."""
     html = re.sub(r'[\n]', ' ', html)#remove new lines
     pattern = re.compile(r'(<img.*?>)|(<video[\s\S]*?</video>)')
     media_htmls = [str(''.join(x)) for x in re.findall(pattern,html)]
@@ -170,8 +173,8 @@ def get_media_from_url(post_url, path, always_use_yt_dlp=True):
         if len(media_htmls) == 0:
             print(f'no media found for {post_url}')
         else:
-            for i, media in enumerate(media_htmls):
-                if any([x in media for x in blacklist]):
+            for media in media_htmls:
+                if any([x in media.lower() for x in blacklist]):
                     print(f'skipping media with blacklisted content: {media}')
                     continue
                 media_src = re.search(r'src="(.*?)"', media)
@@ -191,8 +194,9 @@ def get_media_from_url(post_url, path, always_use_yt_dlp=True):
                 if file_extension not in image_extensions + video_extensions:
                     print(f'unknown file extension: {file_extension} for {media_src}')
                     continue
-                filepath = f'{path}_{i}.{file_extension}'
+                filepath = f'{path}_{media_downloaded}.{file_extension}'
                 with open(filepath, 'wb') as handler:
+                    print('standard', filepath)
                     handler.write(raw_media_data)
                     media_info = get_mediadata_info(filepath, original_source=media_src)
                     media_downloaded += 1
