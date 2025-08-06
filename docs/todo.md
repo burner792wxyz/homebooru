@@ -9,5 +9,6 @@ Major
 - update tags on post import
 - bulk edit
 - internal deleted post catagory
+##
 Minor
 - 

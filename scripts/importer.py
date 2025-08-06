@@ -231,10 +231,22 @@ def get_media_from_url(post_url, path, always_use_yt_dlp=True):
             return id_html, 0, []
         return id_html, media_downloaded, media_objs
 def get_tags_from_url(url) -> list:#still experimental
+    functions = [danbooru_get_tags_from_url, gelbooru_get_tags_from_url]
     html = call_api(url)
     if html == None:
         print(f'no html found for {url}')
         return []
+    for func in functions:
+        try:
+            tags = func(url, html)
+            if len(tags) > 0:
+                if type(tags) == list:
+                    tags = '" '.join(tags)
+                return tags
+        except Exception as e:
+            print(f'Error getting tags from {url} using {func.__name__}: {e}')
+
+def danbooru_get_tags_from_url(url, html) -> list:
     tags = re.findall(r'<(.*?tags.*?)>', html)
     tags = [tag for tag in tags if tag.startswith('section')]#gets tags element
     if len(tags) == 0:
@@ -242,6 +254,14 @@ def get_tags_from_url(url) -> list:#still experimental
         return []
     tags = re.findall(r'"(.*?)"', tags[0])#gets all tags in the element
     tags = sorted(tags, key=lambda x: len(re.sub(r'[^ ]', '', x)) if (x != None) else 0, reverse=True)[0] #find the tag with the most spaces
+    return tags
+
+def gelbooru_get_tags_from_url(url, html) -> list:
+    tags = re.findall(r'<a href="index\.php\?page=post&amp;s=list&amp;tags=.*?">(.*?)</a>', html)
+    if len(tags) == 0:
+        print(f'no tags found in {url}')
+        return []
+    tags = [tag.strip("'") for tag in tags if tag.strip() != '']
     return tags
 
 def download_post(post_id, website_class, site) -> bool:

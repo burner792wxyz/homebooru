@@ -27,6 +27,33 @@ def write_json(filepath: str, obj: dict) -> None:
         file_obj.write(json_bytes)
 
 
+def recode_video(input_path: str, start: float = 0, end_time: float = 0) -> bool:
+    '''recode video to mp4, optionally trim start and end (in seconds)'''
+    import ffmpeg # type: ignore
+    if not os.path.isfile(input_path):
+        print(f'file {input_path} not found, cannot recode')
+        return False
+    output_path = input_path + '.temp.mp4'
+    if end_time is None:
+        probe = ffmpeg.probe(input_path)
+        end_time = float(next(s for s in probe['streams'] if s['codec_type'] == 'video')['duration'])
+
+    if end_time <= start:
+        raise ValueError("End time must be greater than start time.")
+
+    duration = end_time - start
+
+    (
+        ffmpeg
+        .input(input_path, ss=start, t=duration)
+        .output(output_path, codec='copy')
+        .overwrite_output()
+        .run()
+    )
+    os.remove(input_path)
+    os.rename(output_path, input_path)
+    return True
+
 #create things
 def create_file(filepath: str, data: bytes, mode = 'a' ) -> bool:
     '''mode: w = overwrite, j = json a=append, i=ignore if exists. multiple modes can be used together,

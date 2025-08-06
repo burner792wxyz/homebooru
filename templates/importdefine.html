@@ -20,17 +20,32 @@
     <div class="flex-col">
         <div class="notice notice-resized" id="image-resize-notice" hidden="True">a<a href="?resize=true">view original</a></div>
         <section class="imported-content flex centered">
-            {{ media | safe }}
+            {{ media_data["media_html"] | safe }}
         </section>
             <form class="centered" action="\import" method="get">
+                {% if media_data["media_type"] == "video" %}
+                <div class="video-editor">
+                    <div class="range_container">
+                        <input type="range" class="video-trimmer range-min" id="fromSlider" value="0" min="0" max="{{ media_data['video_duration'] }}" step="1">
+                        <input type="range" class="video-trimmer range-max" id="toSlider" value="{{ media_data['video_duration'] }}" min="0" max="{{ media_data['video_duration'] }}" step="1">
+                        <br>
+                        <div class="video-trimmer-values">
+                            <label for="fromInput"></label>
+                            <span>min: <input name="video_start" type="number" class="video-trimmer-value" id="fromInput" value="0" min="0" max="{{ media_data['video_duration'] }}" step="1"> s</span>
+                            <label for="toInput"></label>
+                            <span>max: <input name="video_end" type="number" class="video-trimmer-value" id="toInput" value="{{ media_data['video_duration'] }}" min="0" max="{{ media_data['video_duration'] }}" step="1"> s</span>
+                        </div>
+                    </div>
+                </div class="video-editor">
+                {% endif %}
                 <div class="selector large-selector">
                     <label for="tags">tags</label>
-                    <textarea name="tags" id="tags">{{tags}}</textarea>
+                    <textarea name="tags" id="tags">{{media_data["tags"]}}</textarea>
                 </div>
 
                 <div class="selector large-selector">
-                    <label for="source">source</label>
-                    <textarea name="source" id="source" type="text">{{source}}</textarea>
+                    <label for="source">sources</label>
+                    <textarea name="source" id="source" type="text">{{media_data["source"]}}</textarea>
                 </div>
 
                 <div class="selector large-selector">
@@ -48,7 +63,7 @@
                     </select>
                 </div>
                 <div class="hidden">
-                    <label for="filepath" id="given_filepath">{{filepath}}</label>
+                    <label for="filepath" id="given_filepath">{{media_data["filepath"]}}</label>
                     <input name="filepath" id="filepath">
                 </div>
                 <br>
@@ -60,3 +75,4 @@
     var filepath = document.getElementById("given_filepath").textContent;
     document.getElementById("filepath").value = filepath;
 </script>
+<script src="/static/slider-script.js"></script>

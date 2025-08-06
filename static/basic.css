@@ -374,3 +374,64 @@ picture {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
   text-align: center;
 }
+
+.video-trimmer {
+  position: absolute;
+  appearance: none;
+  height: 2px;
+  left: 2em;
+  right: 2em;
+  box-sizing: border-box;
+  transform: translateY(50%);
+}
+
+.range-min {
+  height: 0;
+  z-index: 1;
+}
+
+.range_container {
+  position: relative;
+}
+
+.video-editor {
+    margin-top: .5em;
+    margin-bottom: 1.5em;
+}
+
+.video-trimmer-values {
+    display: flex;
+    justify-content: space-evenly;
+}
+
+/* For Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* For Firefox */
+input[type=number] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: all;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+input[type=range]::-moz-range-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: all;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  cursor: pointer;  
+}

@@ -546,13 +546,17 @@ def import_post():
                 print(f'multiple media downloaded from {url}')
                 return flask.render_template('importchoose.html', images = labeled_media, tags = tags, source=url)
             
-            return flask.render_template('importdefine.html', media = medias[0], filepath = filepaths[0], tags = tags, source=url)
+            filepath = filepaths[0]
+            video_duration = importer.get_mediadata_info(filepath).get("length", 0)
+            media_type = "video" if video_duration > 0 else "image"
+            media_data = {"media_html" : medias[0], "media_type": media_type, "filepath":filepath, "tags" : tags, "source":url, "video_duration": video_duration}
+            return flask.render_template('importdefine.html', media_data=media_data)
         else:
             return flask.abort(404)
     elif stage == 'choose':#destination after choosing a media obj. make sure /temp/media/imports is deleted afterwards
         all_args = flask.request.form.to_dict()
         image = all_args.get('image', 0)
-        tags = all_args.get('tags', "").split(" ")
+        tags = all_args.get('tags', "")
         url = all_args.get('source', "")
         all_images = os.listdir(f'{app.static_folder}/temp/media/imports')
         try:
@@ -564,10 +568,12 @@ def import_post():
             print(f'error choosing image: {image} not in {all_images}')
             data_manager.clean_temp()
             return flask.redirect('/import')
-        
-        media = generate_media_html(filepath)
 
-        return flask.render_template('importdefine.html', media = media, filepath=filepath, tags = ' '.join(tags), source=url)
+        media = generate_media_html(filepath)
+        video_duration = importer.get_mediadata_info(filepath).get("length", 0)
+        media_type = "video" if video_duration > 0 else "image"
+        media_data = {"media_html" : media, "media_type": media_type, "filepath":filepath, "tags" : tags, "source":url, "video_duration": video_duration}
+        return flask.render_template('importdefine.html', media_data=media_data)
     elif stage == 'submit':
         #get post details
         global dataset_path
@@ -578,6 +584,8 @@ def import_post():
         title = all_args.get('title', "")
         filepath = all_args.get('filepath', "")
         site = all_args.get('site', "homebooru")
+        video_start = float(all_args.get('video_start', 0))
+        video_end = float(all_args.get('video_end', None))
 
         post = classes.post()
 
@@ -606,6 +614,8 @@ def import_post():
         #add post info
         post.from_json(post_data)
         data_manager.create_post(post)
+        data_manager.clean_temp(whitelist = [new_filepath])
+        data_manager.recode_video(new_filepath, video_start, video_end)
 
         return flask.redirect(f'/posts/homebooru_{post_id}')
 
@@ -729,7 +739,7 @@ def post_page(post_name):
         post_data["tags"] = data_manager.tag_cleaner(post_data["tags"])
         full_data[post_id] = post_data
         data_manager.write_json(log_location, full_data)
-        return flask.redirect(f'/posts/{post_name}', code=302)
+        return flask.redirect(f'/posts/{post_name}')
 
     return flask.render_template('post.html', title = title, tag_list = tag_htmls, info = other_postdata_html , media = media, edit = ending)
 
@@ -815,7 +825,7 @@ def wiki_page(tag):
         robots = tag_data['robots']
         data_manager.update_wiki(tag, robots)
 
-        return flask.redirect(f'/wiki/{tag}', code=302)
+        return flask.redirect(f'/wiki/{tag}')
 
     content = {
         "count" : count,
