@@ -437,7 +437,8 @@ def stats_changed() -> None:
 
 
 def get_setting(setting: str):
-    return(read_json(f'{prefix}/config.json')[setting])
+    setting_val = read_json(f'{prefix}/config.json').get(setting, None)
+    return(setting_val)
 
 def change_setting(setting: str, value):
     file = read_json(f'{prefix}/config.json')

@@ -6,6 +6,7 @@ run in venv powershell by executing:
 '''
 import thumbnailizer, post_checker, importer, data_manager, classes #own scripts
 import flask, os, re, math, socket, time, tqdm, random, logging
+from multiprocessing import Process
 
 posts_per_page = data_manager.get_setting('posts_per_page')
 
@@ -113,9 +114,6 @@ def is_iterable(obj):
         return True
     except:
         return False
-
-def terminate_server():
-    os._exit(0)
 
 def print_times(times: dict, merged = False) -> None:
     if merged:
@@ -319,6 +317,7 @@ app = flask.Flask(__name__, static_folder = f'{prefix}/static', template_folder 
 #helper views
 @app.route('/preview/<path:filename>')
 def preview(filename):
+    check_sleep_mode()
     mode = flask.request.args.get('mode', 'original')
     rank = flask.request.args.get('rank', None)
     if mode == 'preview':
@@ -331,6 +330,7 @@ def preview(filename):
 
 @app.route('/update_stats')
 def update_stats():
+    check_sleep_mode()
     data_manager.update_stats()
     return flask.redirect('/settings')
 @app.route('/favicon.ico')
@@ -339,6 +339,7 @@ def favicon():
 
 @app.route('/bulk_edit', methods=['POST'])
 def bulk_edit():
+    check_sleep_mode()
     global dataset_path
     pagechange()
     all_args = flask.request.form.to_dict()
@@ -364,6 +365,7 @@ def bulk_edit():
 
 @app.route("/prev/<post_name>", methods=['GET', 'POST'])
 def prev(post_name):
+    check_sleep_mode()
     global posts_per_page, dataset_path
     pagechange()
     all_args = flask.request.args.to_dict()
@@ -384,6 +386,7 @@ def prev(post_name):
     
 @app.route("/next/<post_name>", methods=['GET', 'POST'])
 def next(post_name):
+    check_sleep_mode()
     global posts_per_page, dataset_path
     pagechange()
     all_args = flask.request.args.to_dict()
@@ -404,15 +407,36 @@ def next(post_name):
 
 @app.route('/shutdown', methods=['POST'])
 def shutdown():
+    global server
     #would like a way to authenicate this request
-    func = flask.request.environ.get('werkzeug.server.shutdown')
-    if func is None:
-        raise RuntimeError('Not running with the Werkzeug Server')
-    func()
+    # Use os._exit(0) to terminate the server process safely
+    os._exit(0)
     return 'Server shutting down...'
+
+@app.route('/sleep', methods=['POST'])
+def sleep():
+    #server run but no requests except /wake are processed
+    data_manager.change_setting('sleep_mode', True)
+    app.logger.info('Server entering sleep mode...')
+    return 'Server entering sleep mode...'
+@app.route('/wake')
+def wake():
+    print('waking server')
+    data_manager.change_setting('sleep_mode', False)
+    time.sleep(1)
+    return flask.redirect('/')
+
+def check_sleep_mode():
+    sleep_mode = data_manager.get_setting('sleep_mode')
+    print('sleep mode:', sleep_mode)
+    if sleep_mode == False:
+        return True
+    flask.flash('Error: Server is in sleep mode. Please wake the server to continue.', 'error')
+    return flask.abort(503)
 
 @app.route('/reimport/<post_name>', methods=['GET', 'POST'])
 def reimport(post_name):
+    check_sleep_mode()
     if '_' not in post_name:
         return flask.abort(404)
     post_site, post_id = post_name.split('_')
@@ -436,6 +460,7 @@ def reimport(post_name):
 @app.route('/')
 @app.route('/posts')
 def home():
+    check_sleep_mode()
     global posts_per_page, dataset_path
     messages = pagechange()
     all_args = flask.request.args.to_dict()
@@ -476,8 +501,8 @@ def home():
 @app.route('/wiki')
 @app.route('/wiki/')
 def wiki():
+    check_sleep_mode()
     pagechange()
-
     all_args = flask.request.args.to_dict()
     search = {x[0]:x[1] for x in all_args.items() if (x[0] in ['name', 'category'] and x[1] != '')}
     order = all_args.get('order', 'count')
@@ -528,6 +553,7 @@ def wiki():
 @app.route('/import', methods=['GET', 'POST'])
 @app.route('/import/', methods=['GET', 'POST'])
 def import_post():
+    check_sleep_mode()
     method = flask.request.method
     stage = flask.request.args.get("stage", "start")
     if stage == 'start':
@@ -652,6 +678,7 @@ def import_post():
         return flask.redirect(f'/posts/homebooru_{post_id}')
 
 def generate_media_html(filepath):
+    check_sleep_mode()
     media_info = importer.get_mediadata_info(filepath)
     if media_info is None:
         print(f'error generating media html for {filepath}')
@@ -676,6 +703,7 @@ def generate_media_html(filepath):
 #mutable pages
 @app.route('/posts/<post_name>', methods=['GET', 'POST'])
 def post_page(post_name):
+    check_sleep_mode()
     if '_' not in post_name:
         return flask.abort(404)
     post_site, post_id = post_name.split('_')
@@ -777,6 +805,7 @@ def post_page(post_name):
 
 @app.route('/wiki/<tag>', methods=['GET', 'POST'])
 def wiki_page(tag):
+    check_sleep_mode()
     pagechange()
     title = f'homebooru wiki: {tag}'
     href = f'/wiki/{tag}?create=True'
@@ -872,11 +901,11 @@ def wiki_page(tag):
 @app.route('/settings')
 @app.route('/settings/')
 def settings():
+    check_sleep_mode()
     stats = data_manager.read_json(f'{dataset_path}/stats.json')
     return flask.render_template('settings.html', stats = stats)
 
 if __name__ == '__main__':
-    global server
     port = data_manager.get_setting('port')
     port = 1741
     hostname = socket.gethostname()
@@ -888,4 +917,6 @@ if __name__ == '__main__':
     data_manager.create_all()
     print(f"Server started on {hostname} at {ip_address}:{port}")
     app.secret_key = 'supersecretkey'
-    app.run(debug=True, host='0.0.0.0', port=port)
+
+    server = Process(target=app.run(debug=True, host='0.0.0.0', port=port))
+    server.start()

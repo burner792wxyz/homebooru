@@ -22,6 +22,9 @@
                 <label for="confirm_shutdown">Type "SHUTDOWN" to confirm server shutdown:</label><br>
                 <input class="med-margin standard_input" type="text" id="confirm_shutdown" name="confirm_shutdown" required>
             </form>
+            <form action="/sleep" method="post">
+                <input class="med-margin standard_input" type="submit" value="Toggle Sleep Mode (no pages will be served, exit with /wake)">
+            </form>
         </section>
 
         <section class="stats">
