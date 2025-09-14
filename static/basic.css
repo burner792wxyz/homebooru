@@ -375,63 +375,118 @@ picture {
   text-align: center;
 }
 
-.video-trimmer {
-  position: absolute;
-  appearance: none;
-  height: 2px;
-  left: 2em;
-  right: 2em;
-  box-sizing: border-box;
-  transform: translateY(50%);
-}
-
-.range-min {
-  height: 0;
-  z-index: 1;
-}
-
-.range_container {
-  position: relative;
-}
-
 .video-editor {
     margin-top: .5em;
     margin-bottom: 1.5em;
 }
-
 .video-trimmer-values {
     display: flex;
     justify-content: space-evenly;
+
+}
+.video-trimmer {
+  -webkit-appearance: none;
+  pointer-events: auto !important;
+  appearance: none;
+  width: 30%;
+  height: 2px;
+  background: #C6C6C6;
+  outline: none;
+  border-radius: 2px;
+  box-shadow: none;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
-/* For Chrome, Safari, Edge, Opera */
+input[type=range]:focus {
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #25daa5;
+  border: 2px solid #fff;
+  box-shadow: 0 0 2px #0003;
+  cursor: pointer;
+  z-index: 10;
+  position: relative;
+}
+input[type=range]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #25daa5;
+  border: 2px solid #fff;
+  box-shadow: 0 0 2px #0003;
+  cursor: pointer;
+  z-index: 10;
+  position: relative;
+}
+input[type=range]::-ms-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #25daa5;
+  border: 2px solid #fff;
+  box-shadow: 0 0 2px #0003;
+  cursor: pointer;
+  z-index: 10;
+  position: relative;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: #C6C6C6;
+  border-radius: 2px;
+}
+input[type=range]::-ms-fill-lower {
+  background: #C6C6C6;
+}
+input[type=range]::-ms-fill-upper {
+  background: #C6C6C6;
+}
+input[type=range]:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px #25daa588;
+}
+input[type=range]:focus::-ms-thumb {
+  box-shadow: 0 0 0 3px #25daa588;
+}
+input[type=range]:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px #25daa588;
+}
+input[type=range]::-moz-range-track {
+  height: 2px;
+  background: #C6C6C6;
+  border-radius: 2px;
+}
+input[type=range]::-ms-tooltip {
+  display: none;
+}
+input[type=range]:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+/* Ensure both sliders are always accessible */
+#toSlider {
+  z-index: 3 !important;
+}
+#fromSlider {
+  z-index: 2 !important;
+}
+
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* For Firefox */
+/* Firefox */
 input[type=number] {
   appearance: textfield;
   -moz-appearance: textfield;
-}
-
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  pointer-events: all;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-input[type=range]::-moz-range-thumb {
-  appearance: none;
-  -webkit-appearance: none;
-  pointer-events: all;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  cursor: pointer;  
 }

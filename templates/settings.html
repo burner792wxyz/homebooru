@@ -18,6 +18,10 @@
 
         <section class="settings">
             <h1>Settings</h1>
+            <form action="/shutdown" method="post">
+                <label for="confirm_shutdown">Type "SHUTDOWN" to confirm server shutdown:</label><br>
+                <input class="med-margin standard_input" type="text" id="confirm_shutdown" name="confirm_shutdown" required>
+            </form>
         </section>
 
         <section class="stats">

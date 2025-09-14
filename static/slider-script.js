@@ -46,8 +46,8 @@ function controlToSlider(fromSlider, toSlider, toInput) {
 }
 
 function getParsed(currentFrom, currentTo) {
-  const from = parseInt(currentFrom.value, 10);
-  const to = parseInt(currentTo.value, 10);
+  const from = parseFloat(currentFrom.value);
+  const to = parseFloat(currentTo.value);
   return [from, to];
 }
 
@@ -78,10 +78,15 @@ const fromSlider = document.querySelector('#fromSlider');
 const toSlider = document.querySelector('#toSlider');
 const fromInput = document.querySelector('#fromInput');
 const toInput = document.querySelector('#toInput');
-fillSlider(fromSlider, toSlider, '#C6C6C6', '#25daa5', toSlider);
-setToggleAccessible(toSlider);
-
-fromSlider.oninput = () => controlFromSlider(fromSlider, toSlider, fromInput);
-toSlider.oninput = () => controlToSlider(fromSlider, toSlider, toInput);
-fromInput.oninput = () => controlFromInput(fromSlider, fromInput, toInput, toSlider);
-toInput.oninput = () => controlToInput(toSlider, fromInput, toInput, toSlider);
+if (fromSlider && toSlider) {
+  fromSlider.step = '0.01';
+  toSlider.step = '0.01';
+  toSlider.style.zIndex = 3;
+  fromSlider.style.zIndex = 2;
+  fillSlider(fromSlider, toSlider, '#C6C6C6', '#25daa5', toSlider);
+  setToggleAccessible(toSlider);
+  fromSlider.oninput = () => controlFromSlider(fromSlider, toSlider, fromInput);
+  toSlider.oninput = () => controlToSlider(fromSlider, toSlider, toInput);
+  fromInput.oninput = () => controlFromInput(fromSlider, fromInput, toInput, toSlider);
+  toInput.oninput = () => controlToInput(toSlider, fromInput, toInput, toSlider);
+}

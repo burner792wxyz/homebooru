@@ -78,14 +78,9 @@ realbooru_patterns = {
 
 def get_mediadata_info(filepath: str, original_source=None) -> dict | None:
     file_extension = filepath.split('.')[-1]
+    print
     try:
-        if file_extension in image_extensions:
-            img = PIL.Image.open(filepath)
-            media_width, media_height = img.size
-            frame_rate = 0
-            length = 0                
-
-        elif file_extension.upper() == 'GIF':
+        if file_extension.upper() == 'GIF':
             try:
                 img = PIL.Image.open(filepath)
                 media_width, media_height = img.size
@@ -104,6 +99,14 @@ def get_mediadata_info(filepath: str, original_source=None) -> dict | None:
             except Exception as ex:
                 print(ex)
                 return None
+
+        elif file_extension in image_extensions:
+            img = PIL.Image.open(filepath)
+            media_width, media_height = img.size
+            frame_rate = 0
+            length = 0                
+
+
 
         else:
             media_info = dict(ffmpeg.probe(filepath))
