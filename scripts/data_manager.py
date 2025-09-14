@@ -33,10 +33,14 @@ def recode_video(input_path: str, start: float = 0, end_time: float = 0) -> bool
     if not os.path.isfile(input_path):
         print(f'file {input_path} not found, cannot recode')
         return False
+    if not input_path.endswith(('.mp4', '.webm', '.mov')):
+        print(f'file {input_path} is not an mp4, cannot recode')
+        return False
     output_path = input_path + '.temp.mp4'
     if end_time is None:
         probe = ffmpeg.probe(input_path)
         end_time = float(next(s for s in probe['streams'] if s['codec_type'] == 'video')['duration'])
+        print(end_time)
 
     if end_time <= start:
         raise ValueError("End time must be greater than start time.")
@@ -146,7 +150,7 @@ def create_all():
         update_stats()
 
 #delete things
-def delete_post(post_name: str) -> bool:
+def delete_post(post_name: str, delete_media = True) -> bool:
     global dataset_path
     stats_changed()
     post_site, post_id = post_name.split('_')
@@ -185,6 +189,17 @@ def delete_post(post_name: str) -> bool:
     stats = read_json(f'{dataset_path}/stats.json')
     stats["deleted_posts"] += 1
     write_json(f'{dataset_path}/stats.json', stats)
+
+    #delete media
+    if delete_media:
+        media_path = f'{dataset_path}/{post_site}/media/{post_name}'
+        if os.path.isfile(media_path):
+            try:
+                os.remove(media_path)
+            except Exception as e:
+                print(f'error deleting media at {media_path}: {e}')
+        else:
+            print(f'media file {media_path} not found, skipping deletion')
     return True
 
 #other things

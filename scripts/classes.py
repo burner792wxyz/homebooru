@@ -178,7 +178,10 @@ class post:
             raise errors.PostNotFound()
         post_json = post_json[str(self.num_id)]
 
-        self.from_json(post_json)
+        try:
+            self.from_json(post_json)
+        except FileNotFoundError:
+            raise errors.PostNotFound()
         
         return None
 

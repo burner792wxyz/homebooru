@@ -146,7 +146,8 @@ def needs_new_cache(current_page, cache_start_page):
 def format_link(link: str) -> str:
     link = str(link)
     if '.' in link:
-        name = link.split('.')[1]
+        name = link.split('://')[-1]
+        name = name.split('.')[0]
         href = re.sub(r'www\.', '', link)
         link = f'<a href ="{href}">{name}</a>'
         return link
@@ -172,6 +173,7 @@ def format_post_data(post_data):
     "Date" : str(time.strftime('%Y-%m-%d %H:%M', time.gmtime(post_data["time_catalouged"]))),
     "Size" : f'{true_size} {post_data["mediadata"]["media_width"]}x{post_data["mediadata"]["media_height"]}x{post_data["mediadata"]["length"]}',
     "Source" : f'{format_link(post_data["mediadata"]["original_source"])} & {format_link(post_data["mediadata"]["media_link"])}',
+    "raw source" : str(post_data["mediadata"]["original_source"]),
     "Rating" : str(post_data["rating"] ),
     "Score" : str(post_data["score"] ),
     "Homebooru_Rank" : str(post_data["rank"]),
@@ -331,7 +333,6 @@ def preview(filename):
 def update_stats():
     data_manager.update_stats()
     return flask.redirect('/settings')
-
 @app.route('/favicon.ico')
 def favicon():
     return flask.send_file(f'{prefix}/static/favicon.ico')
@@ -400,7 +401,37 @@ def next(post_name):
     ind = max(0,passed_ids.index(post_name)+1)
     post = passed_ids[ind]
     return flask.redirect(f'/posts/{post}?parent_href={parent_href}')
+
+@app.route('/shutdown', methods=['POST'])
+def shutdown():
+    #would like a way to authenicate this request
+    func = flask.request.environ.get('werkzeug.server.shutdown')
+    if func is None:
+        raise RuntimeError('Not running with the Werkzeug Server')
+    func()
+    return 'Server shutting down...'
+
+@app.route('/reimport/<post_name>', methods=['GET', 'POST'])
+def reimport(post_name):
+    if '_' not in post_name:
+        return flask.abort(404)
+    post_site, post_id = post_name.split('_')
+    log_location = f'{dataset_path}/{post_site}/post_data.json'
+    full_data = data_manager.read_json(log_location)
+    post_data = dict(full_data[post_id])
+    post_data['id'] = post_name
+    filepath = post_data["storage_path"]
+    if not os.path.exists(filepath):
+        flask.flash(f'Error: Filepath {filepath} does not exist', 'error')
+        return flask.redirect(f'/posts/{post_name}')
     
+    media = generate_media_html(filepath)
+    video_duration = importer.get_mediadata_info(filepath).get("length", 0)
+    media_type = "video" if video_duration > 0 else "image"
+    media_data = {"media_html" : media, "media_type": media_type, "filepath":filepath, "tags" : " ".join(post_data["tags"]), "source":post_data["mediadata"]["original_source"], "video_duration": video_duration}
+    data_manager.delete_post(post_name, delete_media=False)
+    return flask.render_template('importdefine.html', media_data=media_data, reimport=post_name)
+
 #viewable views
 @app.route('/')
 @app.route('/posts')
@@ -585,7 +616,8 @@ def import_post():
         filepath = all_args.get('filepath', "")
         site = all_args.get('site', "homebooru")
         video_start = float(all_args.get('video_start', 0))
-        video_end = float(all_args.get('video_end', None))
+        video_end = all_args.get('video_end', None)
+        video_end = float(video_end) if video_end else None
 
         post = classes.post()
 

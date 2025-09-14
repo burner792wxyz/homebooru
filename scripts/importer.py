@@ -4,13 +4,15 @@ import yt_dlp as yt #type: ignore
 import ffmpeg
 import data_manager, classes
 
-global prefix, dataset_path
+global prefix, dataset_path, debug
+debug = True
+
 cwd = os.path.abspath(os.getcwd())
 prefix = f'{cwd}/source'
 dataset_path = data_manager.read_json(f'{prefix}/config.json')["dataset_path"]
 
 blacklist = ['logo', 'icon', '.js', 'avatar',
-            'preview', 'thumbnail', 'watermark',
+            'thumbnail', 'watermark',
             'banner', 'profile', '.svg']
 
 image_extensions = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'tiff', 'svg', 'gif']
@@ -136,8 +138,12 @@ def call_api(url):
 def get_media_htmls(html: str) -> list[str]:
     """Extracts inner HTML of media elements from the provided HTML string."""
     html = re.sub(r'[\n]', ' ', html)#remove new lines
-    pattern = re.compile(r'(<img.*?>)|(<video[\s\S]*?</video>)')
+    pattern = re.compile(r'(<img.*?>)|(<video[\s\S]*?</video>)|(<meta property="og:image".*?>)')
     media_htmls = [str(''.join(x)) for x in re.findall(pattern,html)]
+    if debug :
+        print(f'found {len(media_htmls)} media elements')
+        for media in media_htmls:
+            print(media)
     return media_htmls
  
 def get_data(website_class, id_html, key):
@@ -151,7 +157,8 @@ def get_media_from_url(post_url, path, always_use_yt_dlp=True):
         Downloads media from a post URL and returns the HTML of the post, number of media files downloaded, and a list of tuples containing the media source and file path.
         '''
         print(f'\n downloading media from {post_url}')
-        if post_url.split('.')[-1] in video_extensions or post_url.split('.')[-1] in image_extensions:
+        extension = post_url.split('?')[0].split('.')[-1]
+        if extension in video_extensions or extension in image_extensions:
             #if the post url is a direct link to a media file, download it directly
             media_data = requests.get(post_url).content
             file_extension = post_url.split('.')[-1].split('?')[0]
@@ -177,18 +184,20 @@ def get_media_from_url(post_url, path, always_use_yt_dlp=True):
                 if any([x in media.lower() for x in blacklist]):
                     print(f'skipping media with blacklisted content: {media}')
                     continue
-                media_src = re.search(r'src="(.*?)"', media)
+                media_src = re.search(r'src="(.*?)"|content="(.*?)"', media)
                 if media_src == None:
                     continue
                 media_src = media_src.groups()[0]
-                if media_src.startswith("https://"):
-                    pass
-                elif media_src.startswith("http://"):
+                if media_src.startswith("https://") or media_src.startswith("http://"):
                     pass
                 else:
                     media_src = "http:" + media_src
-                if not validators.url(media_src):
+                valid = validators.url(media_src)
+                if not valid:
+                    print(f'invalid media url: {media_src}', valid)
                     continue
+                print(media_src, '\n')
+
                 raw_media_data = requests.get(media_src).content
                 file_extension = media_src.split('?')[0].split('.')[-1]
                 if file_extension not in image_extensions + video_extensions:
@@ -227,11 +236,11 @@ def get_media_from_url(post_url, path, always_use_yt_dlp=True):
                 #print(f'html: {id_html}')
         if media_downloaded == 0:
             print(f'no media downloaded for {post_url}')
-            print(f'html: {id_html}')
+            #print(f'html: {id_html}')
             return id_html, 0, []
         return id_html, media_downloaded, media_objs
 def get_tags_from_url(url) -> list:#still experimental
-    functions = [danbooru_get_tags_from_url, gelbooru_get_tags_from_url]
+    functions = [danbooru_get_tags_from_url, gelbooru_get_tags_from_url, realbooru_get_tags_from_url]
     html = call_api(url)
     if html == None:
         print(f'no html found for {url}')
@@ -241,7 +250,10 @@ def get_tags_from_url(url) -> list:#still experimental
             tags = func(url, html)
             if len(tags) > 0:
                 if type(tags) == list:
-                    tags = '" '.join(tags)
+                    #tags = '" '.join(tags)
+                    pass
+                tags = [tag.replace(' ', '_') for tag in tags if tag.strip() != '']
+                tags = ' '.join(tags)
                 return tags
         except Exception as e:
             print(f'Error getting tags from {url} using {func.__name__}: {e}')
@@ -262,6 +274,13 @@ def gelbooru_get_tags_from_url(url, html) -> list:
         print(f'no tags found in {url}')
         return []
     tags = [tag.strip("'") for tag in tags if tag.strip() != '']
+    return tags
+
+def realbooru_get_tags_from_url(url, html) -> list:
+    tags = re.findall(r'<a class="tag-type-general" href=".*?">(.*?)</a>', html)
+    if len(tags) == 0:
+        print(f'no tags found in {url}')
+        return []
     return tags
 
 def download_post(post_id, website_class, site) -> bool:
