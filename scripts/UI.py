@@ -167,6 +167,7 @@ def format_post_data(post_data):
     true_size = classes.format_size(int(post_data["mediadata"]["file_size"]))
     other_postdata = {
     "ID" : str(post_data["id"]),
+    "views" : str(post_data.get("views", 0)),
     "Uploader" : str(post_data["uploader_name"]),
     "Date" : str(time.strftime('%Y-%m-%d %H:%M', time.gmtime(post_data["time_catalouged"]))),
     "Size" : f'{true_size} {post_data["mediadata"]["media_width"]}x{post_data["mediadata"]["media_height"]}x{post_data["mediadata"]["length"]}',
@@ -428,7 +429,6 @@ def wake():
 
 def check_sleep_mode():
     sleep_mode = data_manager.get_setting('sleep_mode')
-    print('sleep mode:', sleep_mode)
     if sleep_mode == False:
         return True
     flask.flash('Error: Server is in sleep mode. Please wake the server to continue.', 'error')
@@ -801,6 +801,11 @@ def post_page(post_name):
         data_manager.write_json(log_location, full_data)
         return flask.redirect(f'/posts/{post_name}')
 
+    post_data.get('views', 0)
+    post_data['views'] = post_data.get('views', 0) + 1
+    print(f'views: {post_data["views"]}')
+    full_data[post_id] = post_data
+    data_manager.write_json(log_location, full_data)
     return flask.render_template('post.html', title = title, tag_list = tag_htmls, info = other_postdata_html , media = media, edit = ending)
 
 @app.route('/wiki/<tag>', methods=['GET', 'POST'])
@@ -902,6 +907,7 @@ def wiki_page(tag):
 @app.route('/settings/')
 def settings():
     check_sleep_mode()
+    pagechange()
     stats = data_manager.read_json(f'{dataset_path}/stats.json')
     return flask.render_template('settings.html', stats = stats)
 

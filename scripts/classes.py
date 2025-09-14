@@ -112,6 +112,7 @@ class post:
         self.storage_path = str(post_data.get("storage_path", self.invalid))
         self.data_path = str(post_data.get("data_path", self.invalid))
         self.rank = post_data.get("rank", self.invalid)
+        self.views = post_data.get("views", 0)
 
         self.mediadata = {
             "media_width" : self.mediadata.get("media_width", self.invalid),
@@ -128,9 +129,9 @@ class post:
             self.data_path = f'{os.path.dirname(os.path.dirname(self.storage_path))}/post_data.json'
             #print(f'self.data_path: {self.data_path}')
         else:
-            raise FileNotFoundError(f'file at {self.storage_path} is not readable, check permissions or file path')
             self.storage_path = "invalid path"
-            self.data_path = "invalid path"
+            self.data_path = "invalid path"            
+            raise FileNotFoundError(f'file at {self.storage_path} is not readable, check permissions or file path')
         if ((strict) and (self.invalid in self.mediadata.values())):
             raise KeyError(self.mediadata)
         self.mediadata = {key: ((None if (self.invalid in value) else value) if isinstance(value, str) else value) for key, value in self.mediadata.items()}
@@ -148,7 +149,8 @@ class post:
             "score" : self.score,
             "storage_path" : self.storage_path,
             "data_path" : self.data_path,
-            "rank" : self.rank
+            "rank" : self.rank,
+            "views" : self.views
         }
         if ((strict) and (self.invalid in self.data_dictionary.values())):
             raise KeyError(self.data_dictionary)
